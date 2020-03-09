@@ -11,6 +11,7 @@ url = 'http://rkn.gov.ru/communication/register/license/'
 # TODO: вывод всех 5 таблиц в 1 эксель файле
 #       при выводе форматирование ширины ячеек
 #       наименование лицензиата должно быть гиперссылкой, нужно вытаскивать href 
+#       запись в эксель ячейки лицензиата как гиперссылка с сопоставлением элементов массива hrefs и текста ячеек
 
 # Вывести в файл весь документ
 # def save__to__file(resp, path):
@@ -36,9 +37,15 @@ def save__to__file(resp, path):
 def save__to__excel(resp, path):
     soup = BeautifulSoup(resp.text, 'lxml')
     soup = soup.find("table", id="ResList1")
-    print(soup)
+    href = soup.find_all(href=True)
+    hrefs = []
+    for a in href:
+        hrefs.append(a['href'])
+    print(hrefs)
+    headers = soup.find("thead")
     t = pd.read_html(str(soup))
     table = t[0].drop("Unnamed: 5", axis=1)
+    # print(table)
     # table.to_excel(path, index=False)
 
 # Тут все нужные таблицы
