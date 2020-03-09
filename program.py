@@ -12,16 +12,15 @@ url = 'http://rkn.gov.ru/communication/register/license/'
 #       при выводе форматирование ширины ячеек
 #       наименование лицензиата должно быть гиперссылкой, нужно вытаскивать href 
 #       запись в эксель ячейки лицензиата как гиперссылка с сопоставлением элементов массива hrefs и текста ячеек
+#       запаковать скрипт в исполняемый файл, чтобы запускался без питона на компьютере
 
 # Вывести в файл весь документ
-# def save__to__file(resp, path):
-#     f = open(path, 'w')
-#     soup = BeautifulSoup(resp.text, 'lxml')
-#     # print(soup.find("table", id="ResList1"))
-#     soup = soup.prettify()
-#     f.write(soup)
-#     f.close()
-
+def save__to__file(resp, path):
+    f = open(path, 'w')
+    soup = BeautifulSoup(resp.text, 'lxml')
+    soup = soup.prettify()
+    f.write(soup)
+    f.close()
 
 # Вывести в файл только таблицы
 def save__to__file(resp, path):
@@ -41,14 +40,16 @@ def save__to__excel(resp, path):
     hrefs = []
     for a in href:
         hrefs.append(a['href'])
-    print(hrefs)
     headers = soup.find("thead")
+    tr = soup.find_all('tr')
+    html = '<table>' + str(headers) + '</table>'
     t = pd.read_html(str(soup))
     table = t[0].drop("Unnamed: 5", axis=1)
-    # print(table)
     # table.to_excel(path, index=False)
-
-# Тут все нужные таблицы
+    # print(table)
+    return table
+ 
+# Тут все нужные таблицы 
 # for i in range (0, 5):
 #     save__to__file(
 #     req.post(
@@ -78,3 +79,4 @@ for i in range (5):
 # https://www.softwaretestinghelp.com/selenium-webdriver-commands-selenium-tutorial-17/
 # https://stackoverflow.com/questions/35831241/converting-html-to-excel-in-python
 # https://www.geeksforgeeks.org/python-convert-an-html-table-into-excel/
+# https://stackoverflow.com/questions/31820069/add-hyperlink-to-excel-sheet-created-by-pandas-dataframe-to-excel-method
