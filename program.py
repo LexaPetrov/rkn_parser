@@ -15,12 +15,29 @@ url = 'http://rkn.gov.ru/communication/register/license/'
 #       запаковать скрипт в исполняемый файл, чтобы запускался без питона на компьютере
 
 # Вывести в файл весь документ
-def save__to__file(resp, path):
-    f = open(path, 'w')
-    soup = BeautifulSoup(resp.text, 'lxml')
-    soup = soup.prettify()
-    f.write(soup)
-    f.close()
+#def save__to__file(resp, path):
+#    f = open(path, 'w')
+#    soup = BeautifulSoup(resp.text, 'lxml')
+#    soup = soup.prettify()
+#    f.write(soup)
+#    f.close()
+
+def excel__writer(table, path):
+    writer = pd.ExcelWriter(path, engine='xlsxwriter')
+    table.to_excel(writer, sheet_name='Sheet1', index=False)
+    workbook = writer.book
+    worksheet = writer.sheets['Sheet1']
+
+    worksheet.set_column(0, 0, 18)
+    worksheet.set_column(1, 1, 80)
+    worksheet.set_column(2, 2, 18)
+    worksheet.set_column(3, 3, 25)
+    worksheet.set_column(4, 4, 40)
+
+    writer.save()
+
+
+
 
 # Вывести в файл только таблицы
 def save__to__file(resp, path):
@@ -86,7 +103,29 @@ while True:
 full_df = pd.concat(dfs, axis=0)
 save__to__excel(full_df, 'table.xlsx')
 
+def excel__writer(table, path):
+    writer = pd.ExcelWriter(path, engine='xlsxwriter')
+    for sheetname, df in table.items():
+        df.to_excel(writer, sheet_name=sheetname)
+        worksheet = writer.sheets[sheetname]  # pull worksheet object
+        for idx, col in enumerate(df):  # loop through all columns
+            series = df[col]
+            max_len = max((series.astype(str).map(len).max(), len(str(series.name)))) + 1  # adding a little extra space
+            worksheet.set_column(idx, idx, max_len)  # set column width
+    writer.save()
 
+
+test = req.get('http://google.com/search?q=Аквамарин', headers={'User-Agent':user_agent})
+
+f = open('res.html', 'w')
+soup = BeautifulSoup(test.text, 'lxml')
+soup = soup.find_all('div', {'class': 'r'})
+for div in soup:
+    cites = []
+    cites.append(div.find('cite').get_text())
+    f.write(str(cites))
+    # f.write(str(div.find('cite').get_text()))
+f.close
 
 
 # https://python-scripts.com/beautifulsoup-html-parsing
