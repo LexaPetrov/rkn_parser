@@ -8,19 +8,9 @@ user_agent = ('Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:50.0) '
 
 url = 'http://rkn.gov.ru/communication/register/license/'
 
-# TODO: вывод всех 5 таблиц в 1 эксель файле
-#       при выводе форматирование ширины ячеек
-#       наименование лицензиата должно быть гиперссылкой, нужно вытаскивать href 
+# TODO: 
 #       запись в эксель ячейки лицензиата как гиперссылка с сопоставлением элементов массива hrefs и текста ячеек
 #       запаковать скрипт в исполняемый файл, чтобы запускался без питона на компьютере
-
-# Вывести в файл весь документ
-#def save__to__file(resp, path):
-#    f = open(path, 'w')
-#    soup = BeautifulSoup(resp.text, 'lxml')
-#    soup = soup.prettify()
-#    f.write(soup)
-#    f.close()
 
 def excel__writer(table, path):
     writer = pd.ExcelWriter(path, engine='xlsxwriter')
@@ -55,7 +45,6 @@ def save__to__file(resp, path):
     else:
         f.close()
 
-
 # сохранить страницу в dataframe
 def read__part__dataframe(resp, start_idx):
     soup = BeautifulSoup(resp.text, 'lxml')
@@ -79,18 +68,6 @@ def add_hyperlinks(table):
     res['Наименование лицензиата'] = res[['Наименование лицензиата', 'Номер лицензии']] \
         .apply(lambda x: make_hyperlink(x['Номер лицензии'], x['Наименование лицензиата']), axis=1)
     return res
-
-# Тут все нужные таблицы 
-# for i in range (0, 5):
-#     save__to__file(
-#     req.post(
-#         url + 'p' + str(500 * i) + '/?all=1',
-#         headers={'User-Agent':user_agent},
-#         params={'SERVICE_ID': 12}
-#     ),
-#     'table__page' + str(i+1) + '.html'
-# )
-
 
 dfs = []
 i = 0
@@ -120,7 +97,6 @@ for div in soup:
     cites = []
     cites.append(div.find('cite').get_text())
     f.write(str(cites))
-    # f.write(str(div.find('cite').get_text()))
 f.close
 
 
