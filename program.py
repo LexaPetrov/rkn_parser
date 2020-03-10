@@ -25,12 +25,21 @@ url = 'http://rkn.gov.ru/communication/register/license/'
 def excel__writer(table, path):
     writer = pd.ExcelWriter(path, engine='xlsxwriter')
     table.to_excel(writer, sheet_name='Sheet1', index=False)
+    workbook = writer.book
     worksheet = writer.sheets['Sheet1']
-
     for idx, col in enumerate(table.columns):
         series = table[col]
-        max_len = min(80, max((series.astype(str).map(len).max(), len(str(series.name)))) + 1)
-        worksheet.set_column(idx, idx, max_len)
+        max_len = max((series.astype(str).map(len).max(), len(str(series.name)))) + 1
+        if col == 'ИНН лицензиата':
+            # специальный формат для столбца 'ИНН лицензиата' (10 цифр)
+            cell_format = workbook.add_format({'num_format': '0' * 10})
+            worksheet.set_column(idx, idx, max_len, cell_format)
+        elif col == 'Наименование лицензиата':
+            # специальный формат и ширина для столбца 'Наименование лицензиата'
+            cell_format = workbook.get_default_url_format()
+            worksheet.set_column(idx, idx, 80, cell_format)
+        else:
+            worksheet.set_column(idx, idx, max_len)
 
     writer.save()
     print('Saved into', path)
