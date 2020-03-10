@@ -70,12 +70,19 @@ def read__part__dataframe(resp, start_idx):
 
 # Тут 5 экселей
 dfs = []
-for i in range (5):
-    dfs.append(read__part__dataframe(req.post(
+i = 0
+while True:
+    response = req.post(
         url + 'p' + str(500 * i) + '/?all=1',
         headers={'User-Agent':user_agent},
         params={'SERVICE_ID': 12}
-    ), 500 * i))
+    )
+    if 'Записей не найдено' in response.text:
+        break
+
+    dfs.append(read__part__dataframe(response, 500 * i))
+    i += 1
+
 full_df = pd.concat(dfs, axis=0)
 save__to__excel(full_df, 'table.xlsx')
 
