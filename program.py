@@ -33,7 +33,12 @@ def save__to__file(resp, path):
         f.close()
 
 # сохранить в excel
-def save__to__excel(resp, path):
+def save__to__excel(df, path):
+    df.to_excel(path)
+    print('Saved into ', path)
+
+# сохранить страницу в dataframe
+def read__part__dataframe(resp, start_idx):
     soup = BeautifulSoup(resp.text, 'lxml')
     soup = soup.find("table", id="ResList1")
     href = soup.find_all(href=True)
@@ -45,10 +50,12 @@ def save__to__excel(resp, path):
     html = '<table>' + str(headers) + '</table>'
     t = pd.read_html(str(soup))
     table = t[0].drop("Unnamed: 5", axis=1)
-    # table.to_excel(path, index=False)
-    # print(table)
+    table.drop(0, axis=0, inplace=True)
+    index = pd.Index(range(start_idx, start_idx + table.shape[0]))
+    table = table.set_index(index)
     return table
- 
+
+
 # Тут все нужные таблицы 
 # for i in range (0, 5):
 #     save__to__file(
@@ -62,15 +69,15 @@ def save__to__excel(resp, path):
 
 
 # Тут 5 экселей
+dfs = []
 for i in range (5):
-    save__to__excel(
-        req.post(
+    dfs.append(read__part__dataframe(req.post(
         url + 'p' + str(500 * i) + '/?all=1',
         headers={'User-Agent':user_agent},
         params={'SERVICE_ID': 12}
-    ),
-    'table' + str(i + 1) + '.xlsx'
-)
+    ), 500 * i))
+full_df = pd.concat(dfs, axis=0)
+save__to__excel(full_df, 'table.xlsx')
 
 
 
