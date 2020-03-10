@@ -51,13 +51,6 @@ def save__to__file(resp, path):
 def read__part__dataframe(resp, start_idx):
     soup = BeautifulSoup(resp.text, 'lxml')
     soup = soup.find("table", id="ResList1")
-    href = soup.find_all(href=True)
-    hrefs = []
-    for a in href:
-        hrefs.append(a['href'])
-    headers = soup.find("thead")
-    tr = soup.find_all('tr')
-    html = '<table>' + str(headers) + '</table>'
     t = pd.read_html(str(soup))
     table = t[0].drop("Unnamed: 5", axis=1)
     table.drop(0, axis=0, inplace=True)
@@ -65,6 +58,18 @@ def read__part__dataframe(resp, start_idx):
     table = table.set_index(index)
     return table
 
+#формирование гиперссылки
+def make_hyperlink(id, value):
+    url_str = url + f'?id={id}&all=1'
+    val = value.replace("\"", "\"\"")
+    return f'=HYPERLINK("{url_str}", "{val}")'
+
+#добавление гиперссылок
+def add_hyperlinks(table):
+    res = pd.DataFrame(table)
+    res['Наименование лицензиата'] = res[['Наименование лицензиата', 'Номер лицензии']] \
+        .apply(lambda x: make_hyperlink(x['Номер лицензии'], x['Наименование лицензиата']), axis=1)
+    return res
 
 # Тут все нужные таблицы 
 # for i in range (0, 5):
@@ -92,7 +97,7 @@ while True:
     dfs.append(read__part__dataframe(response, 500 * i))
     i += 1
 
-full_df = pd.concat(dfs, axis=0)
+full_df = add_hyperlinks(pd.concat(dfs, axis=0))
 excel__writer(full_df, 'table.xlsx')
 
 
