@@ -25,18 +25,15 @@ url = 'http://rkn.gov.ru/communication/register/license/'
 def excel__writer(table, path):
     writer = pd.ExcelWriter(path, engine='xlsxwriter')
     table.to_excel(writer, sheet_name='Sheet1', index=False)
-    workbook = writer.book
     worksheet = writer.sheets['Sheet1']
 
-    worksheet.set_column(0, 0, 18)
-    worksheet.set_column(1, 1, 80)
-    worksheet.set_column(2, 2, 18)
-    worksheet.set_column(3, 3, 25)
-    worksheet.set_column(4, 4, 40)
+    for idx, col in enumerate(table.columns):
+        series = table[col]
+        max_len = min(80, max((series.astype(str).map(len).max(), len(str(series.name)))) + 1)
+        worksheet.set_column(idx, idx, max_len)
 
     writer.save()
-
-
+    print('Saved into', path)
 
 
 # Вывести в файл только таблицы
@@ -49,10 +46,6 @@ def save__to__file(resp, path):
     else:
         f.close()
 
-# сохранить в excel
-def save__to__excel(df, path):
-    df.to_excel(path)
-    print('Saved into ', path)
 
 # сохранить страницу в dataframe
 def read__part__dataframe(resp, start_idx):
@@ -85,7 +78,6 @@ def read__part__dataframe(resp, start_idx):
 # )
 
 
-# Тут 5 экселей
 dfs = []
 i = 0
 while True:
@@ -101,18 +93,8 @@ while True:
     i += 1
 
 full_df = pd.concat(dfs, axis=0)
-save__to__excel(full_df, 'table.xlsx')
+excel__writer(full_df, 'table.xlsx')
 
-def excel__writer(table, path):
-    writer = pd.ExcelWriter(path, engine='xlsxwriter')
-    for sheetname, df in table.items():
-        df.to_excel(writer, sheet_name=sheetname)
-        worksheet = writer.sheets[sheetname]  # pull worksheet object
-        for idx, col in enumerate(df):  # loop through all columns
-            series = df[col]
-            max_len = max((series.astype(str).map(len).max(), len(str(series.name)))) + 1  # adding a little extra space
-            worksheet.set_column(idx, idx, max_len)  # set column width
-    writer.save()
 
 
 test = req.get('http://google.com/search?q=Аквамарин', headers={'User-Agent':user_agent})
