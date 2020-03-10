@@ -73,6 +73,17 @@ for i in range (5):
 )
 
 
+test = req.get('http://google.com/search?q=Аквамарин', headers={'User-Agent':user_agent})
+
+f = open('res.html', 'w')
+soup = BeautifulSoup(test.text, 'lxml')
+soup = soup.find_all('div', {'class': 'r'})
+for div in soup:
+    cites = []
+    cites.append(div.find('cite').get_text())
+    f.write(str(cites))
+    # f.write(str(div.find('cite').get_text()))
+f.close
 
 
 # https://python-scripts.com/beautifulsoup-html-parsing
