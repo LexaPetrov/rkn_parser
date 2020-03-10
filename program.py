@@ -1,6 +1,9 @@
 from bs4 import BeautifulSoup
 import requests as req
 import pandas as pd
+from datetime import datetime
+import time
+from threading import Thread
 pd.io.formats.format.header_style = None
 
 user_agent = ('Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:50.0) '
@@ -9,8 +12,32 @@ user_agent = ('Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:50.0) '
 url = 'http://rkn.gov.ru/communication/register/license/'
 
 # TODO: 
-#       запись в эксель ячейки лицензиата как гиперссылка с сопоставлением элементов массива hrefs и текста ячеек
 #       запаковать скрипт в исполняемый файл, чтобы запускался без питона на компьютере
+
+start = datetime.now()
+
+# def get__search__results(resp, col):
+#     if resp.status_code == 200:
+#         soup = BeautifulSoup(resp.text, 'lxml')
+#         soup = soup.find_all('div', {'class': 'r'})
+#         for div in soup:
+#             return (div.find('cite').get_text())
+#     return (f'http://google.com/search?q={col}')
+
+results = []
+def get__search__results(resp, col):
+    if resp.status_code == 200:
+        for g in soup.find_all('div', class_='r'):
+            anchors = g.find_all('a')
+            if anchors:
+                link = anchors[0]['href']
+                results.append(link)
+        return results
+    return (f'http://google.com/search?q={col}')
+
+
+
+
 
 def excel__writer(table, path):
     writer = pd.ExcelWriter(path, engine='xlsxwriter')
@@ -19,7 +46,7 @@ def excel__writer(table, path):
     worksheet = writer.sheets['Sheet1']
     for col_idx, col in enumerate(table.columns):
         series = table[col]
-        max_len = max((series.astype(str).map(len).max(), len(str(series.name)))) + 1
+        max_len = max((series.astype(str).map(len).max(), len(str(series.name)))) + 5
         if col == 'ИНН лицензиата':
             # специальный формат для столбца 'ИНН лицензиата' (10 цифр)
             cell_format = workbook.add_format({'num_format': '0' * 10})
@@ -43,22 +70,23 @@ def read__part__dataframe(resp, start_idx):
     t = pd.read_html(str(soup))
     table = t[0].drop("Unnamed: 5", axis=1)
     table.drop(0, axis=0, inplace=True)
+    res = []
+    # count = 0
+    # for col in table['Наименование лицензиата']:
+    #     count += 1
+    #     print('Запрос номер', start_idx, count)
+    #     res.append(get__search__results(
+    #             req.get('http://google.com/search?q=' + col, 
+    #                 headers={'User-Agent':user_agent}
+    #             ),
+    #             col
+    #     ))
+    for col in table['Наименование лицензиата']:
+        res.append(f'http://google.com/search?q={col}')
+    table['Поиск в Google'] = res
     index = pd.Index(range(start_idx, start_idx + table.shape[0]))
     table = table.set_index(index)
     return table
-
-# #формирование гиперссылки
-# def make_hyperlink(id, value):
-#     url_str = url + f'?id={id}&all=1'
-#     val = value.replace("\"", "\"\"")
-#     return f'=HYPERLINK("{url_str}", "{val}")'
-#
-# #добавление гиперссылок
-# def add_hyperlinks(table):
-#     res = pd.DataFrame(table)
-#     res['Наименование лицензиата'] = res[['Наименование лицензиата', 'Номер лицензии']] \
-#         .apply(lambda x: make_hyperlink(x['Номер лицензии'], x['Наименование лицензиата']), axis=1)
-#     return res
 
 dfs = []
 i = 0
@@ -79,17 +107,8 @@ excel__writer(full_df, 'table.xlsx')
 
 
 
-test = req.get('http://google.com/search?q=Аквамарин', headers={'User-Agent':user_agent})
 
-f = open('res.html', 'w')
-soup = BeautifulSoup(test.text, 'lxml')
-soup = soup.find_all('div', {'class': 'r'})
-for div in soup:
-    cites = []
-    cites.append(div.find('cite').get_text())
-    f.write(str(cites))
-f.close
-
+print('Заняло времени - ', datetime.now() - start)
 
 # https://python-scripts.com/beautifulsoup-html-parsing
 # https://www.softwaretestinghelp.com/selenium-webdriver-commands-selenium-tutorial-17/
