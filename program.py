@@ -34,17 +34,6 @@ def excel__writer(table, path):
     writer.save()
     print('Saved into', path)
 
-
-# Вывести в файл только таблицы
-def save__to__file(resp, path):
-    f = open(path, 'w')
-    soup = BeautifulSoup(resp.text, 'lxml')
-    soup = soup.find("table", id="ResList1")
-    if soup != None:
-        f.write(str(soup))
-    else:
-        f.close()
-
 # сохранить страницу в dataframe
 def read__part__dataframe(resp, start_idx):
     soup = BeautifulSoup(resp.text, 'lxml')
