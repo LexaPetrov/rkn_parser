@@ -17,19 +17,21 @@ def excel__writer(table, path):
     table.to_excel(writer, sheet_name='Sheet1', index=False)
     workbook = writer.book
     worksheet = writer.sheets['Sheet1']
-    for idx, col in enumerate(table.columns):
+    for col_idx, col in enumerate(table.columns):
         series = table[col]
         max_len = max((series.astype(str).map(len).max(), len(str(series.name)))) + 1
         if col == 'ИНН лицензиата':
             # специальный формат для столбца 'ИНН лицензиата' (10 цифр)
             cell_format = workbook.add_format({'num_format': '0' * 10})
-            worksheet.set_column(idx, idx, max_len, cell_format)
+            worksheet.set_column(col_idx, col_idx, max_len, cell_format)
         elif col == 'Наименование лицензиата':
             # специальный формат и ширина для столбца 'Наименование лицензиата'
             cell_format = workbook.get_default_url_format()
-            worksheet.set_column(idx, idx, 80, cell_format)
+            worksheet.set_column(col_idx, col_idx, 80, cell_format)
+            for row_idx, (id, val) in enumerate(zip(table['Номер лицензии'].values, table[col].values)):
+                worksheet.write_url(row_idx + 1, col_idx, url + f'?id={id}&all=1', string=val)
         else:
-            worksheet.set_column(idx, idx, max_len)
+            worksheet.set_column(col_idx, col_idx, max_len)
 
     writer.save()
     print('Saved into', path)
@@ -45,18 +47,18 @@ def read__part__dataframe(resp, start_idx):
     table = table.set_index(index)
     return table
 
-#формирование гиперссылки
-def make_hyperlink(id, value):
-    url_str = url + f'?id={id}&all=1'
-    val = value.replace("\"", "\"\"")
-    return f'=HYPERLINK("{url_str}", "{val}")'
-
-#добавление гиперссылок
-def add_hyperlinks(table):
-    res = pd.DataFrame(table)
-    res['Наименование лицензиата'] = res[['Наименование лицензиата', 'Номер лицензии']] \
-        .apply(lambda x: make_hyperlink(x['Номер лицензии'], x['Наименование лицензиата']), axis=1)
-    return res
+# #формирование гиперссылки
+# def make_hyperlink(id, value):
+#     url_str = url + f'?id={id}&all=1'
+#     val = value.replace("\"", "\"\"")
+#     return f'=HYPERLINK("{url_str}", "{val}")'
+#
+# #добавление гиперссылок
+# def add_hyperlinks(table):
+#     res = pd.DataFrame(table)
+#     res['Наименование лицензиата'] = res[['Наименование лицензиата', 'Номер лицензии']] \
+#         .apply(lambda x: make_hyperlink(x['Номер лицензии'], x['Наименование лицензиата']), axis=1)
+#     return res
 
 dfs = []
 i = 0
@@ -72,7 +74,7 @@ while True:
     dfs.append(read__part__dataframe(response, 500 * i))
     i += 1
 
-full_df = add_hyperlinks(pd.concat(dfs, axis=0))
+full_df = pd.concat(dfs, axis=0)
 excel__writer(full_df, 'table.xlsx')
 
 
