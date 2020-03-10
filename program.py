@@ -44,6 +44,7 @@ def read__part__dataframe(resp, start_idx):
     table = table.set_index(index)
     return table
 
+
 dfs = []
 i = 0
 while True:
