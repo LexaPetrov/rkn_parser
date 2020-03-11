@@ -9,6 +9,8 @@ pd.io.formats.format.header_style = None
 user_agent = ('Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:50.0) '
               'Gecko/20100101 Firefox/50.0')
 
+# user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36'
+
 url = 'http://rkn.gov.ru/communication/register/license/'
 
 # TODO: 
@@ -24,19 +26,23 @@ start = datetime.now()
 #             return (div.find('cite').get_text())
 #     return (f'http://google.com/search?q={col}')
 
-results = []
 def get__search__results(resp, col):
+    print(resp.status_code)
     if resp.status_code == 200:
+        soup = BeautifulSoup(resp.text, 'lxml')
         for g in soup.find_all('div', class_='r'):
             anchors = g.find_all('a')
             if anchors:
                 link = anchors[0]['href']
-                results.append(link)
-        return results
+                return link
     return (f'http://google.com/search?q={col}')
 
 
-
+def get__list__org(resp, col):
+    print(resp.text)
+    soup = BeautifulSoup(resp.text, 'lxml')
+    div = soup.find('div', class_='org_list')
+    print(div)
 
 
 def excel__writer(table, path):
@@ -57,6 +63,16 @@ def excel__writer(table, path):
             worksheet.set_column(col_idx, col_idx, 80, cell_format)
             for row_idx, (id, val) in enumerate(zip(table['Номер лицензии'].values, table[col].values)):
                 worksheet.write_url(row_idx + 1, col_idx, url + f'?id={id}&all=1', string=val)
+        elif col == 'Поиск в Google':
+            cell_format = workbook.get_default_url_format()
+            worksheet.set_column(col_idx, col_idx, 15, cell_format)
+            for row_idx, (q) in enumerate(table['Поиск в Google']):
+                worksheet.write_url(row_idx + 1, col_idx, q, string='Найти')
+        elif col == 'Поиск на List-Org':
+            cell_format = workbook.get_default_url_format()
+            worksheet.set_column(col_idx, col_idx, 20, cell_format)
+            for row_idx, (q) in enumerate(table['Поиск на List-Org']):
+                worksheet.write_url(row_idx + 1, col_idx, q, string='Найти по ИНН')
         else:
             worksheet.set_column(col_idx, col_idx, max_len)
 
@@ -71,7 +87,8 @@ def read__part__dataframe(resp, start_idx):
     table = t[0].drop("Unnamed: 5", axis=1)
     table.drop(0, axis=0, inplace=True)
     res = []
-    # count = 0
+    res2 = []
+    count = 0
     # for col in table['Наименование лицензиата']:
     #     count += 1
     #     print('Запрос номер', start_idx, count)
@@ -81,11 +98,29 @@ def read__part__dataframe(resp, start_idx):
     #             ),
     #             col
     #     ))
+
+    # for col in table['ИНН лицензиата']:
+    #     count += 1
+    #     print('Запрос номер', start_idx, count)
+    #     res.append(get__list__org(
+    #             req.get('https://www.list-org.com/search?type=inn&val=' + str(col), 
+    #                 headers={'User-Agent':user_agent}
+    #             ),
+    #             col
+    #     ))
+
     for col in table['Наименование лицензиата']:
         res.append(f'http://google.com/search?q={col}')
+
+    for col in table['ИНН лицензиата']:
+        res2.append(f'https://www.list-org.com/search?type=inn&val={col}')
+    
     table['Поиск в Google'] = res
+    table['Поиск на List-Org'] = res2
+    # table['Наименование лицензиата'] = table['Наименование лицензиата'].map({'Акционерное общество': 'АО'})
     index = pd.Index(range(start_idx, start_idx + table.shape[0]))
     table = table.set_index(index)
+   
     return table
 
 dfs = []
@@ -105,9 +140,6 @@ while True:
 full_df = pd.concat(dfs, axis=0)
 excel__writer(full_df, 'table.xlsx')
 
-
-
-
 print('Заняло времени - ', datetime.now() - start)
 
 # https://python-scripts.com/beautifulsoup-html-parsing
@@ -115,3 +147,5 @@ print('Заняло времени - ', datetime.now() - start)
 # https://stackoverflow.com/questions/35831241/converting-html-to-excel-in-python
 # https://www.geeksforgeeks.org/python-convert-an-html-table-into-excel/
 # https://stackoverflow.com/questions/31820069/add-hyperlink-to-excel-sheet-created-by-pandas-dataframe-to-excel-method
+# https://stackoverflow.com/questions/8287628/proxies-with-python-requests-module
+# https://www.list-org.com/
