@@ -3,7 +3,6 @@ import requests as req
 import pandas as pd
 from datetime import datetime
 import time
-from threading import Thread
 pd.io.formats.format.header_style = None
 
 user_agent = ('Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:50.0) '
@@ -17,6 +16,7 @@ url = 'http://rkn.gov.ru/communication/register/license/'
 #       запаковать скрипт в исполняемый файл, чтобы запускался без питона на компьютере
 
 start = datetime.now()
+print('start')
 
 # def get__search__results(resp, col):
 #     if resp.status_code == 200:
@@ -44,6 +44,21 @@ def get__list__org(resp, col):
     div = soup.find('div', class_='org_list')
     print(div)
 
+def replace__text(text):
+    if text.__contains__('Акционерное общество'):
+        text = text.replace('Акционерное общество', 'АО')
+        return text
+    elif text.__contains__('Закрытое акционерное общество'):
+        text = text.replace('Закрытое акционерное общество', 'ЗАО')
+        return text
+    elif text.__contains__('Индивидуальный предприниматель'):
+        text = text.replace('Индивидуальный предприниматель', 'ИП')
+        return text
+    elif text.__contains__('Публичное акционерное общество'):
+        text = text.replace('Публичное акционерное общество', 'ПАО')
+        return text
+    else:
+        return text
 
 def excel__writer(table, path):
     writer = pd.ExcelWriter(path, engine='xlsxwriter')
@@ -62,12 +77,14 @@ def excel__writer(table, path):
             cell_format = workbook.get_default_url_format()
             worksheet.set_column(col_idx, col_idx, 80, cell_format)
             for row_idx, (id, val) in enumerate(zip(table['Номер лицензии'].values, table[col].values)):
+                val = replace__text(val)
                 worksheet.write_url(row_idx + 1, col_idx, url + f'?id={id}&all=1', string=val)
         elif col == 'Поиск в Google':
             cell_format = workbook.get_default_url_format()
-            worksheet.set_column(col_idx, col_idx, 15, cell_format)
-            for row_idx, (q) in enumerate(table['Поиск в Google']):
-                worksheet.write_url(row_idx + 1, col_idx, q, string='Найти')
+            worksheet.set_column(col_idx, col_idx, 20, cell_format)
+            for row_idx, (g) in enumerate(table['Поиск в Google']):
+                g = g.replace(' ', '+')
+                worksheet.write_url(row_idx + 1, col_idx, g, string='Найти')
         elif col == 'Поиск на List-Org':
             cell_format = workbook.get_default_url_format()
             worksheet.set_column(col_idx, col_idx, 20, cell_format)
@@ -110,7 +127,7 @@ def read__part__dataframe(resp, start_idx):
     #     ))
 
     for col in table['Наименование лицензиата']:
-        res.append(f'http://google.com/search?q={col}')
+        res.append(f'https://www.google.com/search?q={col}')
 
     for col in table['ИНН лицензиата']:
         res2.append(f'https://www.list-org.com/search?type=inn&val={col}')
@@ -129,7 +146,8 @@ while True:
     response = req.post(
         url + 'p' + str(500 * i) + '/?all=1',
         headers={'User-Agent':user_agent},
-        params={'SERVICE_ID': 12}
+        params={'SERVICE_ID': 12},
+        timeout=5
     )
     if 'Записей не найдено' in response.text:
         break
