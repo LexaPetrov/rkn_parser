@@ -37,6 +37,11 @@ def get__search__results(resp, col):
                 return link
     return (f'http://google.com/search?q={col}')
 
+def get__region(resp, col):
+    print(resp.text)
+    soup = BeautifulSoup(resp.text, 'lxml')
+    table = soup.find("table", id="TblList")
+    # print(table)
 
 def get__list__org(resp, col):
     print(resp.text)
@@ -134,14 +139,16 @@ def read__part__dataframe(resp, start_idx):
     
     table['Поиск в Google'] = res
     table['Поиск на List-Org'] = res2
-    # table['Наименование лицензиата'] = table['Наименование лицензиата'].map({'Акционерное общество': 'АО'})
+
+    
+
     index = pd.Index(range(start_idx, start_idx + table.shape[0]))
     table = table.set_index(index)
    
     return table
 
 dfs = []
-i = 0
+i = 4
 while True:
     response = req.post(
         url + 'p' + str(500 * i) + '/?all=1',
@@ -156,7 +163,49 @@ while True:
     i += 1
 
 full_df = pd.concat(dfs, axis=0)
+# counter = 0
+# for col in full_df['Номер лицензии']:
+#     time.sleep(5)
+#     counter += 1
+#     print(counter)
+#     get__region(
+#         req.get(
+#                 f'{url}?id={col}&all=1'
+#             )
+#             ,
+#             col
+#         )
+#     if counter == 5: break
 excel__writer(full_df, 'table.xlsx')
+
+# test = req.post(
+#     url + '/?all=1',
+#         headers={'User-Agent':user_agent},
+#         params={
+#             'SERVICE_ID': 12,
+#             'REGION_ID': 22
+#             },
+#         timeout=5
+# )https://www.list-org.com/search?type=inn&val=9102250133
+# print(test.text)
+
+counter = 0
+for col in full_df['ИНН лицензиата']:
+    counter += 1
+    # time.sleep(1)
+    print(counter)
+    print('-----------')
+    test = req.get(
+    f'https://www.list-org.com/search?type=inn&val={col}',
+        headers={'User-Agent':user_agent},
+        timeout=5
+    )
+    soup = BeautifulSoup(test.text)
+    soup = soup.find('div', class_='content')
+    print(soup)
+    # if counter == 5: break
+
+
 
 print('Заняло времени - ', datetime.now() - start)
 
