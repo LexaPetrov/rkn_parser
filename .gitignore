@@ -578,3 +578,4 @@ pip-selfcheck.json
 .idea/rkn_parser.iml
 .idea/vcs.xml
 requirements.txt
+*.xlsx

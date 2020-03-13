@@ -14,3 +14,9 @@
  
  ### Перед началом работы делаете ``` git pull origin master ```
     Эта команда сливает изменения с ветки master в ту ветвь, в которой вы работаете
+    
+### Запуск
+``` 
+pip3 install -r requirements.txt
+python3 program.py
+```
