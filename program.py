@@ -65,12 +65,14 @@ def excel__writer(table, path):
     table.to_excel(writer, sheet_name='Sheet1', index=False)
     workbook = writer.book
     worksheet = writer.sheets['Sheet1']
+    align_format = workbook.add_format({'align':'center'})
     for col_idx, col in enumerate(table.columns):
         series = table[col]
         max_len = max((series.astype(str).map(len).max(), len(str(series.name)))) + 5
+        align_format = workbook.add_format({'align':'center'})
         if col == 'ИНН лицензиата':
             # специальный формат для столбца 'ИНН лицензиата' (10 цифр)
-            cell_format = workbook.add_format({'num_format': '0' * 10})
+            cell_format = workbook.add_format({'num_format': '0' * 10, 'align':'center'})
             worksheet.set_column(col_idx, col_idx, max_len, cell_format)
         elif col == 'Наименование лицензиата':
             # специальный формат и ширина для столбца 'Наименование лицензиата'
@@ -91,7 +93,7 @@ def excel__writer(table, path):
             for row_idx, (q) in enumerate(table['Поиск на List-Org']):
                 worksheet.write_url(row_idx + 1, col_idx, q, string='Найти по ИНН')
         else:
-            worksheet.set_column(col_idx, col_idx, max_len)
+            worksheet.set_column(col_idx, col_idx, max_len, align_format)
 
     writer.save()
     print('Saved into', path)
