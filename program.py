@@ -115,12 +115,12 @@ def excel__writer(table, path):
             worksheet.set_column(col_idx, col_idx, 20, cell_format)
             for row_idx, (g) in enumerate(table['Поиск в Google']):
                 g = g.replace(' ', '+')
-                worksheet.write_url(row_idx + 1, col_idx, g, string='Найти')
+                worksheet.write_url(row_idx + 1, col_idx, g, string='Найти', cell_format=align_format)
         elif col == 'Поиск на List-Org':
             cell_format = workbook.get_default_url_format()
             worksheet.set_column(col_idx, col_idx, 20, cell_format)
             for row_idx, (q) in enumerate(table['Поиск на List-Org']):
-                worksheet.write_url(row_idx + 1, col_idx, q, string='Найти по ИНН')
+                worksheet.write_url(row_idx + 1, col_idx, q, string='Найти по ИНН', cell_format=align_format)
         else:
             worksheet.set_column(col_idx, col_idx, max_len, align_format)
 
