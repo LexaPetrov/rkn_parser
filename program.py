@@ -191,20 +191,20 @@ excel__writer(full_df, 'table.xlsx')
 # )https://www.list-org.com/search?type=inn&val=9102250133
 # print(test.text)
 
-counter = 0
-for col in full_df['ИНН лицензиата']:
-    counter += 1
-    # time.sleep(1)
-    print(counter)
-    print('-----------')
-    test = req.get(
-    f'https://www.list-org.com/search?type=inn&val={col}',
-        headers={'User-Agent':user_agent},
-        timeout=5
-    )
-    soup = BeautifulSoup(test.text)
-    soup = soup.find('div', class_='content')
-    print(soup)
+# counter = 0
+# for col in full_df['ИНН лицензиата']:
+#     counter += 1
+#     # time.sleep(1)
+#     print(counter)
+#     print('-----------')
+#     test = req.get(
+#     f'https://www.list-org.com/search?type=inn&val={col}',
+#         headers={'User-Agent':user_agent},
+#         timeout=5
+#     )
+#     soup = BeautifulSoup(test.text)
+#     soup = soup.find('div', class_='content')
+#     print(soup)
     # if counter == 5: break
 
 
