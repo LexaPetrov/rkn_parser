@@ -1,3 +1,7 @@
+*.html
+*.xlsx
+
+
 # Created by .ignore support plugin (hsz.mobi)
 ### Linux template
 *~
@@ -565,7 +569,6 @@ pyvenv.cfg
 .venv
 pip-selfcheck.json
 
-.gitignore
 .idea/$CACHE_FILE$
 .idea/.gitignore
 .idea/dictionaries
