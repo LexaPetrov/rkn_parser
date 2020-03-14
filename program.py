@@ -129,7 +129,7 @@ def replace__region(t):
 
 # Сохранить в Excel-файл
 def excel__writer(table, path):
-    writer = pd.ExcelWriter(path, engine='xlsxwriter')
+    writer = pd.ExcelWriter(path, engine='xlsxwriter') # pylint: disable=abstract-class-instantiated
     table.to_excel(writer, sheet_name='Sheet1', index=False)
     workbook = writer.book
     worksheet = writer.sheets['Sheet1']
@@ -172,9 +172,6 @@ def excel__writer(table, path):
         #         worksheet.write_url(row_idx + 1, col_idx, q, string=q, cell_format=align_format)
         else:
             worksheet.set_column(col_idx, col_idx, max_len)
-            for row_idx, (id, val) in enumerate(zip(table['Номер лицензии'].values, table[col].values)):
-                row_format = workbook.add_format({'align':'center','bg_color':'#FFFFFF' if row_idx%2==0 else '#CCCCCC', 'border':1, 'border_color':'#808080'})
-                worksheet.write(row_idx+1, col_idx, val, row_format)
 
 
     writer.save()
@@ -262,12 +259,13 @@ for col in full_df['ИНН лицензиата']:
         print('sleep 5s')
         time.sleep(5)
 
-    if counter == 11:
-        full_df['Веб-сайт'] = pd.Series(web__sites)
+    if counter == 21:
+        full_df['Веб-сайт'] = pd.Series(web__sites).fillna(' - пока не найдено - ')
         excel__writer(full_df, 'table__full.xlsx')
-        print('Выполнено 10 запросов. Промежуточная таблица сохранена. Остановка программы на 5 минут')
+        print('Выполнено 20 запросов. Промежуточная таблица сохранена. Остановка программы на 5 минут')
         time.sleep(300)
         counter = 0
+
     print('link - ', counter + 1, link)
     web__sites.append(link)
 
