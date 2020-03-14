@@ -165,11 +165,16 @@ def excel__writer(table, path):
                 row_format = workbook.add_format({'align':'center', 'font_color':'#007AA6','bg_color':'#FFFFFF' if row_idx%2==0 else '#CCCCCC', 'border':1, 'border_color':'#808080'})
                 worksheet.write_url(row_idx + 1, col_idx, q, string='Найти по ИНН', cell_format=row_format)
             
-        # elif col == 'Веб-сайт':
-        #     cell_format = workbook.get_default_url_format()
-        #     worksheet.set_column(col_idx, col_idx, 20, cell_format)
-        #     for row_idx, (q) in enumerate(table['Веб-сайт']):
-        #         worksheet.write_url(row_idx + 1, col_idx, q, string=q, cell_format=align_format)
+        elif col == 'Веб-сайт':
+            cell_format = workbook.get_default_url_format()
+            worksheet.set_column(col_idx, col_idx, 20, cell_format)
+            for row_idx, (q) in enumerate(table['Веб-сайт']):
+                row_format = workbook.add_format({'align':'center', 'font_color':'#007AA6', 'bg_color':'#FFFFFF' if row_idx%2==0 else '#CCCCCC', 'border':1, 'border_color':'#808080'})
+                row_format2 = workbook.add_format({'align':'center', 'bg_color':'#FFFFFF' if row_idx%2==0 else '#CCCCCC', 'border':1, 'border_color':'#808080'})
+                if (isinstance(q, str) and q!='- не найдено -' and q!='- ошибка запроса -'):
+                    worksheet.write_url(row_idx + 1, col_idx, q, string=q, cell_format=row_format)
+                else:
+                    worksheet.write(row_idx+1, col_idx, str(q), row_format2)
         else:
             worksheet.set_column(col_idx, col_idx, max_len)
             for row_idx, (id, val) in enumerate(zip(table['Номер лицензии'].values, table[col].values)):
@@ -239,10 +244,12 @@ for index, region in enumerate(regions__low):
     
 
 full_df = pd.concat(dfs, axis=0)
-cols = full_df.columns.tolist()
-cols = cols[:2]+cols[-2:]+cols[2:-2]
-full_df = full_df[cols]
 full_df['Регион'] = arr
+full_df['Веб-сайт'] = ""
+cols = full_df.columns.tolist()
+print(cols)
+cols = cols[:2] + cols[8:9] + cols[5:7] + cols[7:8]+cols[2:5]
+full_df = full_df[cols]
 full_df = replace__region(full_df)
 excel__writer(full_df, 'table.xlsx')
 web__sites = []
@@ -274,6 +281,7 @@ for col in full_df['ИНН лицензиата']:
     web__sites.append(link)
 
 full_df['Веб-сайт'] = web__sites
+
 excel__writer(full_df, 'table__full.xlsx')
 
 
