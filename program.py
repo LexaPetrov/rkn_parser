@@ -148,21 +148,21 @@ def excel__writer(table, path):
             cell_format = workbook.get_default_url_format()
             worksheet.set_column(col_idx, col_idx, 80, cell_format)
             for row_idx, (id, val) in enumerate(zip(table['Номер лицензии'].values, table[col].values)):
-                row_format = workbook.add_format({'bg_color':'#FFFFFF' if row_idx%2==0 else '#CCCCCC', 'border':1, 'border_color':'#808080'})
+                row_format = workbook.add_format({'font_color':'#007AA6', 'bg_color':'#FFFFFF' if row_idx%2==0 else '#CCCCCC', 'border':1, 'border_color':'#808080'})
                 val = replace__text(val)
                 worksheet.write_url(row_idx + 1, col_idx, url + f'?id={id}&all=1', string=val, cell_format=row_format)
         elif col == 'Поиск в Google':
             cell_format = workbook.get_default_url_format()
             worksheet.set_column(col_idx, col_idx, 20, cell_format)
             for row_idx, (g) in enumerate(table['Поиск в Google']):
-                row_format = workbook.add_format({'align':'center','bg_color':'#FFFFFF' if row_idx%2==0 else '#CCCCCC', 'border':1, 'border_color':'#808080'})
+                row_format = workbook.add_format({'align':'center', 'font_color':'#007AA6', 'bg_color':'#FFFFFF' if row_idx%2==0 else '#CCCCCC', 'border':1, 'border_color':'#808080'})
                 g = g.replace(' ', '+')
                 worksheet.write_url(row_idx + 1, col_idx, g, string='Найти', cell_format=row_format)
         elif col == 'Поиск на List-Org':
             cell_format = workbook.get_default_url_format()
             worksheet.set_column(col_idx, col_idx, 20, cell_format)
             for row_idx, (q) in enumerate(table['Поиск на List-Org']):
-                row_format = workbook.add_format({'align':'center','bg_color':'#FFFFFF' if row_idx%2==0 else '#CCCCCC', 'border':1, 'border_color':'#808080'})
+                row_format = workbook.add_format({'align':'center', 'font_color':'#007AA6','bg_color':'#FFFFFF' if row_idx%2==0 else '#CCCCCC', 'border':1, 'border_color':'#808080'})
                 worksheet.write_url(row_idx + 1, col_idx, q, string='Найти по ИНН', cell_format=row_format)
             
         # elif col == 'Веб-сайт':
@@ -172,7 +172,9 @@ def excel__writer(table, path):
         #         worksheet.write_url(row_idx + 1, col_idx, q, string=q, cell_format=align_format)
         else:
             worksheet.set_column(col_idx, col_idx, max_len)
-
+            for row_idx, (id, val) in enumerate(zip(table['Номер лицензии'].values, table[col].values)):
+                row_format = workbook.add_format({'align':'center', 'bg_color': '#FFFFFF' if row_idx%2==0 else '#CCCCCC', 'border':1, 'border_color':'#808080'})
+                worksheet.write(row_idx+1, col_idx, val, row_format)
 
     writer.save()
     print('Saved into', path)
@@ -217,7 +219,7 @@ dfs = []
 arr = []
 for index, region in enumerate(regions__low):
     i = 0
-    while True:
+    while True: 
         time.sleep(2)
         print(f'req # {index + 1} / 86, i = {i}')
         if index % 2 == 0: time.sleep(30)
