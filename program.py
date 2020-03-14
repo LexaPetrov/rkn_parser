@@ -174,11 +174,10 @@ def excel__writer(table, path):
             worksheet.set_column(col_idx, col_idx, max_len)
             for row_idx, (id, val) in enumerate(zip(table['Номер лицензии'].values, table[col].values)):
                 row_format = workbook.add_format({'align':'center', 'bg_color': '#FFFFFF' if row_idx%2==0 else '#CCCCCC', 'border':1, 'border_color':'#808080'})
-                worksheet.write(row_idx+1, col_idx, val, row_format)
+                worksheet.write(row_idx+1, col_idx, str(val), row_format)
 
     writer.save()
     print('Saved into', path)
-
 
 # сохранить страницу в dataframe
 def read__part__dataframe(resp, start_idx):
@@ -213,7 +212,7 @@ regions = [
 ]
 # Для теста
 regions__low = [
-    89
+    130, 131
 ]
 dfs = []
 arr = []
