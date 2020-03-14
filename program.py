@@ -26,7 +26,7 @@ def get__company__contacts(resp, col):
     soup = BeautifulSoup(resp.text, 'lxml')
     soup = soup.find('div', class_='org_list')
     if soup == None:
-        return('- не найдено -')
+        return('- ошибка запроса -')
     elif soup != None:
         soup = soup.find('a')
         try:
@@ -211,7 +211,7 @@ regions = [
 ]
 # Для теста
 regions__low = [
-    1, 2
+    89
 ]
 dfs = []
 arr = []
@@ -220,6 +220,7 @@ for index, region in enumerate(regions__low):
     while True:
         time.sleep(2)
         print(f'req # {index + 1} / 86, i = {i}')
+        if index % 2 == 0: time.sleep(30)
         response = req.post(
             url + 'p' + str(500 * i) + '/?all=1',
             headers={'User-Agent':user_agent},
@@ -262,11 +263,13 @@ for col in full_df['ИНН лицензиата']:
     if counter == 21:
         full_df['Веб-сайт'] = pd.Series(web__sites).fillna(' - пока не найдено - ')
         excel__writer(full_df, 'table__full.xlsx')
-        print('Выполнено 20 запросов. Промежуточная таблица сохранена. Остановка программы на 5 минут')
+        print(datetime.now(), f'Выполнено {len(web__sites)} / {len(full_df["Регион"])} запросов. Промежуточная таблица сохранена. Остановка программы на 5 минут')
         time.sleep(300)
         counter = 0
-
-    print('link - ', counter + 1, link)
+    
+    if len(web__sites) == len(full_df['Регион']):
+        break
+    print('link -', counter + 1, 'статус:', link)
     web__sites.append(link)
 
 full_df['Веб-сайт'] = web__sites
