@@ -101,9 +101,32 @@ def replace__text(text):
         text = text.replace('Некоммерческое партнерство', 'НП')
     elif text.__contains__('Некоммерческое учреждение'):
         text = text.replace('Некоммерческое учреждение', 'НУ')
-    else:
-        return text
+
+    quotes = ['“', '”', '»', '«']
+    for q in quotes:
+        text = text.replace(q, '\"')
+
+    idx = text.find('\"')
+    if(idx != -1):
+        text = text[idx:] + ", " + text[:idx]
+
     return text
+
+def groupby__inn(table):
+    df = table.sort_values(by='Номер лицензии')
+    groupby_cols = ['Наименование лицензиата', 'ИНН лицензиата']
+    grouped = df.groupby(groupby_cols)
+
+    res = pd.DataFrame(index=range(len(grouped.indices)), columns=df.columns)
+    for idx, col in enumerate(groupby_cols):
+        res[col] = list(map(lambda x: x[idx], grouped.indices))
+
+    columns = list(set(df.columns).difference(set(groupby_cols + ['Регион'])))
+    for col in columns:
+        res[col] = grouped.apply(lambda x: '\n'.join(x[col].astype('str').unique())).values
+    res['Регион'] = grouped.apply(lambda x: ', '.join(x['Регион'].astype('str').unique())).values
+
+    return res
 
 def replace__region(t):
     t['Регион'] = t['Регион'].map({
@@ -127,54 +150,89 @@ def replace__region(t):
     })
     return t
 
+#Подготовка таблицы к выводу в exсel
+def format__table(df, max_regions_number):
+    cols = ['Номер лицензии',
+            'Наименование лицензиата',
+            'Поиск в Google',
+            'Поиск на List-Org',
+            'Веб-сайт',
+            'ИНН лицензиата',
+            'Срок действия',
+            'День начала оказания услуг(не позднее)',
+            'Регион'
+    ]
+
+    res = pd.DataFrame(df, columns=cols)
+    res = replace__region(res)
+    res = groupby__inn(res)
+
+    res['ИНН лицензиата'] = res['ИНН лицензиата'].astype('str')
+    res['ИНН лицензиата'] = res['ИНН лицензиата'].apply(lambda x: x.zfill(10) if len(x) <= 10 else x.zfill(12))
+
+    res['Поиск в Google'] = res['Наименование лицензиата'].\
+        apply(lambda x: f'https://www.google.com/search?q={x.replace(" ", "+")}')
+    res['Поиск на List-Org'] = res['ИНН лицензиата'].\
+        apply(lambda x: f'https://www.list-org.com/search?type=inn&val={x}')
+
+    res['Регион'] = res['Регион'].apply(lambda x: 'РФ' if len(x.split(', ')) == max_regions_number else x)
+    res['Наименование лицензиата'] = res['Наименование лицензиата'].apply(replace__text)
+    res['Веб-сайт'] = ""
+
+    res = res.sort_values(by='Наименование лицензиата')
+    res = res.set_index(pd.Index(range(res.shape[0])))
+    return res
+
+
 # Сохранить в Excel-файл
 def excel__writer(table, path):
     writer = pd.ExcelWriter(path, engine='xlsxwriter') # pylint: disable=abstract-class-instantiated
     table.to_excel(writer, sheet_name='Sheet1', index=False)
     workbook = writer.book
     worksheet = writer.sheets['Sheet1']
+
+    base_format_dict = {'align': 'center', 'valign': 'top', 'border': 1, 'border_color': '#808080'}
+    row_dict = {**base_format_dict, 'text_wrap': True}
+    url_center_dict = {**base_format_dict, 'hyperlink': True}
+    url_left_dict = {**base_format_dict, 'hyperlink': True, 'align': 'left'}
+
     for col_idx, col in enumerate(table.columns):
         series = table[col]
         max_len = max((series.astype(str).map(len).max(), len(str(series.name)))) + 5
-        if col == 'ИНН лицензиата':
-            # специальный формат для столбца 'ИНН лицензиата' (10 цифр)
-            worksheet.set_column(col_idx, col_idx, max_len)
-            for row_idx, (id, val) in enumerate(zip(table['Номер лицензии'].values, table[col].values)):
-                row_format = workbook.add_format({'num_format': '0' * 10, 'align':'center', 'bg_color': '#FFFFFF' if row_idx%2==0 else '#CCCCCC', 'border':1, 'border_color':'#808080'})
-                worksheet.write(row_idx+1, col_idx, val, row_format)
-
-        elif col == 'Наименование лицензиата':
+        if col == 'Наименование лицензиата':
             # специальный формат и ширина для столбца 'Наименование лицензиата'
-            cell_format = workbook.get_default_url_format()
-            worksheet.set_column(col_idx, col_idx, 80, cell_format)
+            worksheet.set_column(col_idx, col_idx, 80)
             for row_idx, (id, val) in enumerate(zip(table['Номер лицензии'].values, table[col].values)):
-                row_format = workbook.add_format({'font_color':'#007AA6', 'bg_color':'#FFFFFF' if row_idx%2==0 else '#CCCCCC', 'border':1, 'border_color':'#808080'})
-                val = replace__text(val)
-                worksheet.write_url(row_idx + 1, col_idx, url + f'?id={id}&all=1', string=val, cell_format=row_format)
+                search_id = id.split('\n')[0]
+                cell_format = workbook.add_format({**url_left_dict, 'bg_color': ('#FFFFFF' if row_idx % 2 == 0 else '#CCCCCC')})
+                worksheet.write_url(row_idx + 1, col_idx,
+                                    url + f'?id={search_id}&all=1', string=val, cell_format=cell_format)
         elif col == 'Поиск в Google':
-            cell_format = workbook.get_default_url_format()
-            worksheet.set_column(col_idx, col_idx, 20, cell_format)
+            worksheet.set_column(col_idx, col_idx, 20)
             for row_idx, (g) in enumerate(table['Поиск в Google']):
-                row_format = workbook.add_format({'align':'center', 'font_color':'#007AA6', 'bg_color':'#FFFFFF' if row_idx%2==0 else '#CCCCCC', 'border':1, 'border_color':'#808080'})
-                g = g.replace(' ', '+')
-                worksheet.write_url(row_idx + 1, col_idx, g, string='Найти', cell_format=row_format)
+                cell_format = workbook.add_format({**url_center_dict, 'bg_color': ('#FFFFFF' if row_idx % 2 == 0 else '#CCCCCC')})
+                worksheet.write_url(row_idx + 1, col_idx, g, string='Найти', cell_format=cell_format)
         elif col == 'Поиск на List-Org':
-            cell_format = workbook.get_default_url_format()
-            worksheet.set_column(col_idx, col_idx, 20, cell_format)
+            worksheet.set_column(col_idx, col_idx, 20)
             for row_idx, (q) in enumerate(table['Поиск на List-Org']):
-                row_format = workbook.add_format({'align':'center', 'font_color':'#007AA6','bg_color':'#FFFFFF' if row_idx%2==0 else '#CCCCCC', 'border':1, 'border_color':'#808080'})
-                worksheet.write_url(row_idx + 1, col_idx, q, string='Найти по ИНН', cell_format=row_format)
+                cell_format = workbook.add_format({**url_center_dict, 'bg_color': ('#FFFFFF' if row_idx % 2 == 0 else '#CCCCCC')})
+                worksheet.write_url(row_idx + 1, col_idx, q, string='Найти по ИНН', cell_format=cell_format)
             
         # elif col == 'Веб-сайт':
         #     cell_format = workbook.get_default_url_format()
         #     worksheet.set_column(col_idx, col_idx, 20, cell_format)
         #     for row_idx, (q) in enumerate(table['Веб-сайт']):
         #         worksheet.write_url(row_idx + 1, col_idx, q, string=q, cell_format=align_format)
+        elif col == 'Регион':
+            worksheet.set_column(col_idx, col_idx, 30)
+            for row_idx, r in enumerate(table['Регион']):
+                cell_format = workbook.add_format({**row_dict, 'bg_color': ('#FFFFFF' if row_idx % 2 == 0 else '#CCCCCC')})
+                worksheet.write(row_idx + 1, col_idx, str(r), cell_format)
         else:
             worksheet.set_column(col_idx, col_idx, max_len)
-            for row_idx, (id, val) in enumerate(zip(table['Номер лицензии'].values, table[col].values)):
-                row_format = workbook.add_format({'align':'center', 'bg_color': '#FFFFFF' if row_idx%2==0 else '#CCCCCC', 'border':1, 'border_color':'#808080'})
-                worksheet.write(row_idx+1, col_idx, str(val), row_format)
+            for row_idx, r in enumerate(table[col]):
+                cell_format = workbook.add_format({**row_dict, 'bg_color': ('#FFFFFF' if row_idx % 2 == 0 else '#CCCCCC')})
+                worksheet.write(row_idx + 1, col_idx, str(r), cell_format)
 
     writer.save()
     print('Saved into', path)
@@ -187,18 +245,6 @@ def read__part__dataframe(resp, start_idx):
         t = pd.read_html(str(soup))
     except: return 'Записей не найдено'
     table = t[0].drop("Unnamed: 5", axis=1)
-    table.drop(0, axis=0, inplace=True)
-    res = []
-    res2 = []
-
-    for col in table['Наименование лицензиата']:
-        res.append(f'https://www.google.com/search?q={col}')
-
-    for col in table['ИНН лицензиата']:
-        res2.append(f'https://www.list-org.com/search?type=inn&val={col}')
-    
-    table['Поиск в Google'] = res
-    table['Поиск на List-Org'] = res2
     index = pd.Index(range(start_idx, start_idx + table.shape[0]))
     table = table.set_index(index)
    
@@ -210,10 +256,12 @@ regions = [
     31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60,
     61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 83, 86, 87, 89, 99, 130, 131
 ]
+max_regions_number = len(regions)
+
 # Для теста
-regions__low = [
-    130, 131
-]
+regions__low = regions[0:5]
+max_regions_number = len(regions__low)
+
 dfs = []
 arr = []
 for index, region in enumerate(regions__low):
@@ -232,20 +280,16 @@ for index, region in enumerate(regions__low):
            break
         res = read__part__dataframe(response, 500 * i)
         dfs.append(res)
-        for j in range(len(res)):
-            arr.append(region)
-            j += 1
+        arr += [region] * len(res)
         i += 1
-    
+        if res.shape[0] < 500:
+            break
 
 full_df = pd.concat(dfs, axis=0)
-full_df['Веб-сайт'] = ""
-cols = full_df.columns.tolist()
-cols = cols[:2] + cols[8:9] + cols[5:7] + cols[7:8]+cols[2:5]
-full_df = full_df[cols]
 full_df['Регион'] = arr
-full_df = replace__region(full_df)
+full_df = format__table(full_df, max_regions_number)
 excel__writer(full_df, 'table.xlsx')
+
 web__sites = []
 counter = 0
 for col in full_df['ИНН лицензиата']:
