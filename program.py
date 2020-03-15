@@ -123,7 +123,7 @@ def groupby__inn(table):
 
     columns = list(set(df.columns).difference(set(groupby_cols + ['Регион'])))
     for col in columns:
-        res[col] = grouped.apply(lambda x: '\n'.join(x[col].astype('str').unique())).values
+        res[col] = grouped.apply(lambda x: '\n'.join(x[col].astype('str'))).values
     res['Регион'] = grouped.apply(lambda x: ', '.join(x['Регион'].astype('str').unique())).values
 
     return res
@@ -153,14 +153,14 @@ def replace__region(t):
 #Подготовка таблицы к выводу в exсel
 def format__table(df, max_regions_number):
     cols = ['Номер лицензии',
+            'Регион',
             'Наименование лицензиата',
             'Поиск в Google',
             'Поиск на List-Org',
             'Веб-сайт',
             'ИНН лицензиата',
             'Срок действия',
-            'День начала оказания услуг(не позднее)',
-            'Регион'
+            'День начала оказания услуг(не позднее)'
     ]
 
     res = pd.DataFrame(df, columns=cols)
@@ -197,8 +197,8 @@ def excel__writer(table, path):
     url_left_dict = {**base_format_dict, 'hyperlink': True, 'align': 'left'}
 
     for col_idx, col in enumerate(table.columns):
-        series = table[col]
-        max_len = max((series.astype(str).map(len).max(), len(str(series.name)))) + 5
+        series = table[col].astype(str)
+        max_len = max((series.apply(lambda x: max(map(len, x.split('\n')))).max(), len(str(series.name)))) + 5
         if col == 'Наименование лицензиата':
             # специальный формат и ширина для столбца 'Наименование лицензиата'
             worksheet.set_column(col_idx, col_idx, 80)
@@ -260,11 +260,11 @@ max_regions_number = len(regions)
 
 # Для теста
 regions__low = regions[0:5]
-max_regions_number = len(regions__low)
+# max_regions_number = len(regions__low)
 
 dfs = []
 arr = []
-for index, region in enumerate(regions__low):
+for index, region in enumerate(regions):
     i = 0
     while True: 
         time.sleep(2)
