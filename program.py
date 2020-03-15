@@ -182,37 +182,32 @@ def excel__writer(table, path):
     workbook = writer.book
     worksheet = writer.sheets['Sheet1']
 
-    light_row_format = workbook.add_format({'bg_color': '#FFFFFF'})
-    dark_row_format = workbook.add_format({'bg_color': '#CCCCCC'})
-    worksheet.conditional_format(1, 0, table.shape[0] - 1, table.shape[1] - 1,
-        {'type': 'formula', 'criteria': '=MOD(ROW(),2)', 'value': 0, 'format': dark_row_format})
-    worksheet.conditional_format(1, 0, table.shape[0] - 1, table.shape[1] - 1,
-        {'type': 'formula', 'criteria': '=MOD(ROW(),2)', 'value': 1, 'format': light_row_format})
-
     base_format_dict = {'align': 'center', 'valign': 'top', 'border': 1, 'border_color': '#808080'}
-
-    row_format = workbook.add_format({**base_format_dict, 'text_wrap': True})
-    url_center_format = workbook.add_format({**base_format_dict, 'hyperlink': True})
-    url_left_format = workbook.add_format({**base_format_dict, 'hyperlink': True, 'align': 'left'})
+    row_dict = {**base_format_dict, 'text_wrap': True}
+    url_center_dict = {**base_format_dict, 'hyperlink': True}
+    url_left_dict = {**base_format_dict, 'hyperlink': True, 'align': 'left'}
 
     for col_idx, col in enumerate(table.columns):
         series = table[col]
         max_len = max((series.astype(str).map(len).max(), len(str(series.name)))) + 5
         if col == 'Наименование лицензиата':
             # специальный формат и ширина для столбца 'Наименование лицензиата'
-            worksheet.set_column(col_idx, col_idx, 80, url_left_format)
+            worksheet.set_column(col_idx, col_idx, 80)
             for row_idx, (id, val) in enumerate(zip(table['Номер лицензии'].values, table[col].values)):
                 search_id = id.split('\n')[0]
+                cell_format = workbook.add_format({**url_left_dict, 'bg_color': ('#FFFFFF' if row_idx % 2 == 0 else '#CCCCCC')})
                 worksheet.write_url(row_idx + 1, col_idx,
-                                    url + f'?id={search_id}&all=1', string=val, cell_format=url_left_format)
+                                    url + f'?id={search_id}&all=1', string=val, cell_format=cell_format)
         elif col == 'Поиск в Google':
-            worksheet.set_column(col_idx, col_idx, 20, url_center_format)
+            worksheet.set_column(col_idx, col_idx, 20)
             for row_idx, (g) in enumerate(table['Поиск в Google']):
-                worksheet.write_url(row_idx + 1, col_idx, g, string='Найти', cell_format=url_center_format)
+                cell_format = workbook.add_format({**url_center_dict, 'bg_color': ('#FFFFFF' if row_idx % 2 == 0 else '#CCCCCC')})
+                worksheet.write_url(row_idx + 1, col_idx, g, string='Найти', cell_format=cell_format)
         elif col == 'Поиск на List-Org':
-            worksheet.set_column(col_idx, col_idx, 20, url_center_format)
+            worksheet.set_column(col_idx, col_idx, 20)
             for row_idx, (q) in enumerate(table['Поиск на List-Org']):
-                worksheet.write_url(row_idx + 1, col_idx, q, string='Найти по ИНН', cell_format=url_center_format)
+                cell_format = workbook.add_format({**url_center_dict, 'bg_color': ('#FFFFFF' if row_idx % 2 == 0 else '#CCCCCC')})
+                worksheet.write_url(row_idx + 1, col_idx, q, string='Найти по ИНН', cell_format=cell_format)
             
         # elif col == 'Веб-сайт':
         #     cell_format = workbook.get_default_url_format()
@@ -220,9 +215,15 @@ def excel__writer(table, path):
         #     for row_idx, (q) in enumerate(table['Веб-сайт']):
         #         worksheet.write_url(row_idx + 1, col_idx, q, string=q, cell_format=align_format)
         elif col == 'Регион':
-            worksheet.set_column(col_idx, col_idx, 30, row_format)
+            worksheet.set_column(col_idx, col_idx, 30)
+            for row_idx, r in enumerate(table['Регион']):
+                cell_format = workbook.add_format({**row_dict, 'bg_color': ('#FFFFFF' if row_idx % 2 == 0 else '#CCCCCC')})
+                worksheet.write(row_idx + 1, col_idx, str(r), cell_format)
         else:
-            worksheet.set_column(col_idx, col_idx, max_len, row_format)
+            worksheet.set_column(col_idx, col_idx, max_len)
+            for row_idx, r in enumerate(table[col]):
+                cell_format = workbook.add_format({**row_dict, 'bg_color': ('#FFFFFF' if row_idx % 2 == 0 else '#CCCCCC')})
+                worksheet.write(row_idx + 1, col_idx, str(r), cell_format)
 
     writer.save()
     print('Saved into', path)
@@ -249,7 +250,7 @@ regions = [
 max_regions_number = len(regions)
 
 # Для теста
-regions__low = [130, 131]
+regions__low = regions[0:5]
 max_regions_number = len(regions__low)
 
 dfs = []
