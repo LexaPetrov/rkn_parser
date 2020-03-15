@@ -152,7 +152,18 @@ def replace__region(t):
 
 #Подготовка таблицы к выводу в exсel
 def format__table(df, max_regions_number):
-    res = pd.DataFrame(df)
+    cols = ['Номер лицензии',
+            'Наименование лицензиата',
+            'Поиск в Google',
+            'Поиск на List-Org',
+            'Веб-сайт',
+            'ИНН лицензиата',
+            'Срок действия',
+            'День начала оказания услуг(не позднее)',
+            'Регион'
+    ]
+
+    res = pd.DataFrame(df, columns=cols)
     res = replace__region(res)
     res = groupby__inn(res)
 
@@ -166,10 +177,7 @@ def format__table(df, max_regions_number):
 
     res['Регион'] = res['Регион'].apply(lambda x: 'РФ' if len(x.split(', ')) == max_regions_number else x)
     res['Наименование лицензиата'] = res['Наименование лицензиата'].apply(replace__text)
-
-    cols = res.columns.tolist()
-    cols = cols[:2] + cols[-2:] + cols[2:-2]
-    res = res[cols]
+    res['Веб-сайт'] = ""
 
     res = res.sort_values(by='Наименование лицензиата')
     return res
