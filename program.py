@@ -180,6 +180,7 @@ def format__table(df, max_regions_number):
     res['Веб-сайт'] = ""
 
     res = res.sort_values(by='Наименование лицензиата')
+    res = res.set_index(pd.Index(range(res.shape[0])))
     return res
 
 
