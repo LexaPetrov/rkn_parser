@@ -202,7 +202,7 @@ def excel__writer(table, path):
             # специальный формат и ширина для столбца 'Наименование лицензиата'
             worksheet.set_column(col_idx, col_idx, 80, url_left_format)
             for row_idx, (id, val) in enumerate(zip(table['Номер лицензии'].values, table[col].values)):
-                search_id = id.split('\r\n')[0]
+                search_id = id.split('\n')[0]
                 worksheet.write_url(row_idx + 1, col_idx,
                                     url + f'?id={search_id}&all=1', string=val, cell_format=url_left_format)
         elif col == 'Поиск в Google':
@@ -250,8 +250,8 @@ regions = [
 max_regions_number = len(regions)
 
 # Для теста
-regions__low = regions[0:11]
-max_regions_number = len(regions__low) #len(regions)
+regions__low = [130, 131]
+max_regions_number = len(regions__low)
 
 dfs = []
 arr = []
