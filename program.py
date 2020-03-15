@@ -235,7 +235,6 @@ def read__part__dataframe(resp, start_idx):
         t = pd.read_html(str(soup))
     except: return 'Записей не найдено'
     table = t[0].drop("Unnamed: 5", axis=1)
-    table.drop(0, axis=0, inplace=True)
     index = pd.Index(range(start_idx, start_idx + table.shape[0]))
     table = table.set_index(index)
    
