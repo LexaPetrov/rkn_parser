@@ -26,11 +26,14 @@ start = datetime.now()
 print('start')
 
 try: 
+    full_df = pd.read_excel('table.xlsx')
+    print('Найден файл table.xlsx / Поиск файла table__full.xlsx...')
     web__sites = pd.read_excel('table__full.xlsx')
     web__sites = list(web__sites['Веб-сайт'])
     print('Найден файл table__full.xlsx / Продолжение поиска ссылок...')
 except: 
     web__sites = []
+    full_df = []
     print('Не найден файл table__full.xlsx / Старт поиска ссылок...')
     pass
 
@@ -275,64 +278,37 @@ regions__low = regions[0:1]
 
 dfs = []
 arr = []
-for index, region in enumerate(regions):
-    i = 0
-    while True: 
-        time.sleep(2)
-        print(f'req # {index + 1} / 86, i = {i}')
-        if index % 2 != 0: time.sleep(30)
-        response = req.post(
-            url + 'p' + str(500 * i) + '/?all=1',
-            headers={'User-Agent':user_agent},
-            params={'SERVICE_ID': 12, 'REGION_ID': region},
-            timeout=5
-        )
-        if 'Записей не найдено' in response.text:   
-           break
-        res = read__part__dataframe(response, 500 * i)
-        dfs.append(res)
-        arr += [region] * len(res)
-        i += 1
-        if res.shape[0] < 500:
-            break
+if len(full_df) < 1:
+    for index, region in enumerate(regions):
+        i = 0
+        while True: 
+            time.sleep(2)
+            print(f'req # {index + 1} / 86, i = {i}')
+            if index % 2 != 0: time.sleep(30)
+            response = req.post(
+                url + 'p' + str(500 * i) + '/?all=1',
+                headers={'User-Agent':user_agent},
+                params={'SERVICE_ID': 12, 'REGION_ID': region},
+                timeout=5
+            )
+            if 'Записей не найдено' in response.text:   
+                break
+            res = read__part__dataframe(response, 500 * i)
+            dfs.append(res)
+            arr += [region] * len(res)
+            i += 1
+            if res.shape[0] < 500:
+                break
 
-full_df = pd.concat(dfs, axis=0)
-full_df['Регион'] = arr
+    full_df = pd.concat(dfs, axis=0)
+    full_df['Регион'] = arr
 full_df = format__table(full_df, max_regions_number)
 excel__writer(full_df, 'table.xlsx')
 
 
 
 counter = 0
-# for col in full_df['ИНН лицензиата']:
-#     time.sleep(1.5)
-#     counter += 1
-#     user_agent = user_agent_rotator.get_random_user_agent()
-#     response = req.get(
-#         f'{list__org__url}/search?type=inn',
-#             headers={'User-Agent':user_agent},
-#             params={'val': col},
-#             timeout=10,
-#         )
-#     link = get__company__contacts(response, col)
-#     if link == None:
-#         print('sleep 5s')
-#         time.sleep(5)
-
-#     if counter == 21:
-#         full_df['Веб-сайт'] = pd.Series(web__sites).fillna(' - пока не найдено - ')
-#         excel__writer(full_df, 'table__full.xlsx')
-#         print(datetime.now(), f'Выполнено {len(web__sites)} / {len(full_df["Регион"])} запросов. Промежуточная таблица сохранена. Остановка программы на 5 минут. \n Необходимо ввести проверочный код на https://www.list-org.com/bot')
-#         time.sleep(300)
-#         counter = 0
-    
-#     if len(web__sites) == len(full_df['Регион']):
-#         break
-#     print('link -', counter + 1, 'статус:', link)
-#     web__sites.append(link)
-
 for row, col in enumerate(full_df['ИНН лицензиата']):
-    time.sleep(1.5)
     counter += 1
     user_agent = user_agent_rotator.get_random_user_agent()
     try:
@@ -364,6 +340,7 @@ for row, col in enumerate(full_df['ИНН лицензиата']):
             if row == len(full_df['Регион']):
                 print('Завершен поиск ссылок')
                 break
+            time.sleep(1.5)
     except: 
         response = req.get(
             f'{list__org__url}/search?type=inn',
@@ -388,6 +365,7 @@ for row, col in enumerate(full_df['ИНН лицензиата']):
         if row == len(full_df['Регион']):
             print('Завершен поиск ссылок')
             break
+        time.sleep(1.5)
     
 full_df['Веб-сайт'] = pd.Series(web__sites)
 excel__writer(full_df, 'table__full.xlsx')
