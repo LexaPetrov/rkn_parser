@@ -1,8 +1,12 @@
+
 from bs4 import BeautifulSoup
 import requests as req
 import pandas as pd
 from datetime import datetime
 import time
+from random_user_agent.user_agent import UserAgent
+from random_user_agent.params import SoftwareName, OperatingSystem
+import xlrd
 pd.io.formats.format.header_style = None
 
 user_agent = ('Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:50.0) '
@@ -11,15 +15,25 @@ user_agent = ('Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:50.0) '
 url = 'http://rkn.gov.ru/communication/register/license/'
 list__org__url = 'https://www.list-org.com'
 
-proxies = {
-    "http": 'http://195.158.232.16:8080', 
-    "https": 'http://195.158.232.16:8080', 
-}
+software_names = [SoftwareName.CHROME.value]
+operating_systems = [OperatingSystem.WINDOWS.value, OperatingSystem.LINUX.value]   
 
-# TODO: запаковать скрипт в исполняемый файл, чтобы запускался без питона на компьютере
+user_agent_rotator = UserAgent(software_names=software_names, operating_systems=operating_systems, limit=100)
+
+user_agents = user_agent_rotator.get_user_agents()
 
 start = datetime.now()
 print('start')
+
+try: 
+    web__sites = pd.read_excel('table__full.xlsx')
+    web__sites = list(web__sites['Веб-сайт'])
+    print('Найден файл table__full.xlsx / Продолжение поиска ссылок...')
+except: 
+    web__sites = []
+    print('Не найден файл table__full.xlsx / Старт поиска ссылок...')
+    pass
+
 
 # Парсинг компаний по ИНН на List-Org
 def get__company__contacts(resp, col):
@@ -49,6 +63,7 @@ def get__company__contacts(resp, col):
                     link__span = span.decompose()
                     for a in site__link:
                         a = a.replace('http://', '')
+                        a = a.replace('https://', '')
                         a = a.replace('www.', '')
                         if (a.__contains__('www') & ~a.__contains__('http://')):
                             a = a.replace(a, 'http://'+a)
@@ -220,12 +235,6 @@ def excel__writer(table, path):
             for row_idx, (q) in enumerate(table['Поиск на List-Org']):
                 cell_format = workbook.add_format({**url_center_dict, 'bg_color': ('#FFFFFF' if row_idx % 2 == 0 else '#CCCCCC')})
                 worksheet.write_url(row_idx + 1, col_idx, q, string='Найти по ИНН', cell_format=cell_format)
-            
-        # elif col == 'Веб-сайт':
-        #     cell_format = workbook.get_default_url_format()
-        #     worksheet.set_column(col_idx, col_idx, 20, cell_format)
-        #     for row_idx, (q) in enumerate(table['Веб-сайт']):
-        #         worksheet.write_url(row_idx + 1, col_idx, q, string=q, cell_format=align_format)
         elif col == 'Регион':
             worksheet.set_column(col_idx, col_idx, 30)
             for row_idx, r in enumerate(table['Регион']):
@@ -260,19 +269,18 @@ regions = [
     61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 83, 86, 87, 89, 99, 130, 131
 ]
 max_regions_number = len(regions)
-
 # Для теста
-regions__low = regions[0:5]
-# max_regions_number = len(regions__low)
+regions__low = regions[0:1]
+max_regions_number = len(regions__low)
 
 dfs = []
 arr = []
-for index, region in enumerate(regions):
+for index, region in enumerate(regions__low):
     i = 0
     while True: 
         time.sleep(2)
         print(f'req # {index + 1} / 86, i = {i}')
-        if index % 2 == 0: time.sleep(30)
+        if index % 2 != 0: time.sleep(30)
         response = req.post(
             url + 'p' + str(500 * i) + '/?all=1',
             headers={'User-Agent':user_agent},
@@ -293,35 +301,95 @@ full_df['Регион'] = arr
 full_df = format__table(full_df, max_regions_number)
 excel__writer(full_df, 'table.xlsx')
 
-web__sites = []
+
+
 counter = 0
-for col in full_df['ИНН лицензиата']:
+# for col in full_df['ИНН лицензиата']:
+#     time.sleep(1.5)
+#     counter += 1
+#     user_agent = user_agent_rotator.get_random_user_agent()
+#     response = req.get(
+#         f'{list__org__url}/search?type=inn',
+#             headers={'User-Agent':user_agent},
+#             params={'val': col},
+#             timeout=10,
+#         )
+#     link = get__company__contacts(response, col)
+#     if link == None:
+#         print('sleep 5s')
+#         time.sleep(5)
+
+#     if counter == 21:
+#         full_df['Веб-сайт'] = pd.Series(web__sites).fillna(' - пока не найдено - ')
+#         excel__writer(full_df, 'table__full.xlsx')
+#         print(datetime.now(), f'Выполнено {len(web__sites)} / {len(full_df["Регион"])} запросов. Промежуточная таблица сохранена. Остановка программы на 5 минут. \n Необходимо ввести проверочный код на https://www.list-org.com/bot')
+#         time.sleep(300)
+#         counter = 0
+    
+#     if len(web__sites) == len(full_df['Регион']):
+#         break
+#     print('link -', counter + 1, 'статус:', link)
+#     web__sites.append(link)
+
+for row, col in enumerate(full_df['ИНН лицензиата']):
     time.sleep(1.5)
     counter += 1
-    response = req.get(
-        f'{list__org__url}/search?type=inn',
-            headers={'User-Agent':user_agent},
-            params={'val': col},
-            timeout=10,
-        )
-    link = get__company__contacts(response, col)
-    if link == None:
-        print('sleep 5s')
-        time.sleep(5)
+    user_agent = user_agent_rotator.get_random_user_agent()
+    try:
+        if web__sites[row] == '- не найдено -' or web__sites[row].__contains__('http'):
+            link = web__sites[row]
+            print(f'Ссылка {row + 1} : /{link}/ уже обрабатывалась, переход к следующей...')
+            counter = 0
+        else:
+            response = req.get(
+            f'{list__org__url}/search?type=inn',
+                headers={'User-Agent':user_agent},
+                params={'val': col},
+                timeout=10,
+            )
+            link = get__company__contacts(response, col)
+            if link == None:
+                print('sleep 5s')
+                time.sleep(5)
+            web__sites[row] = link
 
-    if counter == 21:
-        full_df['Веб-сайт'] = pd.Series(web__sites).fillna(' - пока не найдено - ')
-        excel__writer(full_df, 'table__full.xlsx')
-        print(datetime.now(), f'Выполнено {len(web__sites)} / {len(full_df["Регион"])} запросов. Промежуточная таблица сохранена. Остановка программы на 5 минут')
-        time.sleep(300)
-        counter = 0
+            if counter % 20 == 0:
+                full_df['Веб-сайт'] = pd.Series(web__sites).fillna(' - пока не найдено - ')
+                excel__writer(full_df, 'table__full.xlsx')
+                print(datetime.now(), f'Выполнено {row} / {len(full_df["Регион"])} запросов. Промежуточная таблица сохранена. Остановка программы на 5 минут. \n Необходимо ввести проверочный код на https://www.list-org.com/bot')
+                time.sleep(300)
+                counter = 0
+            print('link -', counter + 1, 'статус:', link)
+
+            if row == len(full_df['Регион']):
+                print('Завершен поиск ссылок')
+                break
+    except: 
+        response = req.get(
+            f'{list__org__url}/search?type=inn',
+                headers={'User-Agent':user_agent},
+                params={'val': col},
+                timeout=10,
+            )
+        link = get__company__contacts(response, col)
+        if link == None:
+            print('sleep 5s')
+            time.sleep(5)
+
+        if counter % 20 == 0:
+            full_df['Веб-сайт'] = pd.Series(web__sites).fillna(' - пока не найдено - ')
+            excel__writer(full_df, 'table__full.xlsx')
+            print(datetime.now(), f'Выполнено {row} / {len(full_df["Регион"])} запросов. Промежуточная таблица сохранена. Остановка программы на 5 минут. \n Необходимо ввести проверочный код на https://www.list-org.com/bot')
+            time.sleep(300)
+            counter = 0
+        print('link -', counter + 1, 'статус:', link)
+        web__sites.append(link)
+        
+        if row == len(full_df['Регион']):
+            print('Завершен поиск ссылок')
+            break
     
-    if len(web__sites) == len(full_df['Регион']):
-        break
-    print('link -', counter + 1, 'статус:', link)
-    web__sites.append(link)
-
-full_df['Веб-сайт'] = web__sites
+full_df['Веб-сайт'] = pd.Series(web__sites)
 excel__writer(full_df, 'table__full.xlsx')
 
 
