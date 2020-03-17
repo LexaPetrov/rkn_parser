@@ -122,8 +122,11 @@ def groupby__inn(table):
         res[col] = list(map(lambda x: x[idx], grouped.indices))
 
     columns = list(set(df.columns).difference(set(groupby_cols + ['Регион'])))
-    for col in columns:
-        res[col] = grouped.apply(lambda x: '\n'.join(x[col].astype('str'))).values
+
+    for row_idx, (idx, part_df) in enumerate(grouped):
+        for col in columns:
+            res.loc[row_idx, col] = '\n'.join(list(map(str, part_df.groupby('Номер лицензии')[col].first())))
+
     res['Регион'] = grouped.apply(lambda x: ', '.join(x['Регион'].astype('str').unique())).values
 
     return res
