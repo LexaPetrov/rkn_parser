@@ -268,11 +268,11 @@ regions = [
 max_regions_number = len(regions)
 # Для теста
 regions__low = regions[0:1]
-max_regions_number = len(regions__low)
+# max_regions_number = len(regions__low)
 
 dfs = []
 arr = []
-for index, region in enumerate(regions__low):
+for index, region in enumerate(regions):
     i = 0
     while True: 
         time.sleep(2)
