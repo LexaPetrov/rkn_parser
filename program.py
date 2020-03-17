@@ -315,7 +315,7 @@ if len(full_df) < 1:
         while True: 
             time.sleep(2)
             print(f'req # {index + 1} / 86, i = {i}')
-            if index % 2 != 0: time.sleep(10)
+            if index % 2 != 0: time.sleep(30)
             response = req.post(
                 url + 'p' + str(500 * i) + '/?all=1',
                 headers={'User-Agent':user_agent},
