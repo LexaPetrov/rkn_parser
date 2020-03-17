@@ -362,6 +362,12 @@ for row, col in enumerate(full_df['ИНН лицензиата']):
 
             if counter % 20 == 0:
                 full_df['Веб-сайт'] = pd.Series(web__sites).fillna(' - пока не найдено - ')
+                if ~full_df['Поиск в Google'][1].__contains__('http'):
+                    full_df['Поиск в Google'] = full_df['Наименование лицензиата'].\
+                        apply(lambda x: f'https://www.google.com/search?q={x.replace(" ", "+")}')
+                if ~full_df['Поиск на List-Org'][1].__contains__('http'):       
+                    full_df['Поиск на List-Org'] = full_df['ИНН лицензиата'].\
+                        apply(lambda x: f'https://www.list-org.com/search?type=inn&val={x}')
                 excel__writer(full_df, 'table__full.xlsx')
                 print(datetime.now(), f'Выполнено {row} / {len(full_df["Регион"])} запросов. Промежуточная таблица сохранена. Остановка программы на 5 минут. \n Необходимо ввести проверочный код на https://www.list-org.com/bot')
                 time.sleep(300)
@@ -386,6 +392,12 @@ for row, col in enumerate(full_df['ИНН лицензиата']):
 
         if counter % 20 == 0:
             full_df['Веб-сайт'] = pd.Series(web__sites).fillna(' - пока не найдено - ')
+            if ~full_df['Поиск в Google'][1].__contains__('http'):
+                full_df['Поиск в Google'] = full_df['Наименование лицензиата'].\
+                        apply(lambda x: f'https://www.google.com/search?q={x.replace(" ", "+")}')
+            if ~full_df['Поиск на List-Org'][1].__contains__('http'):       
+                full_df['Поиск на List-Org'] = full_df['ИНН лицензиата'].\
+                    apply(lambda x: f'https://www.list-org.com/search?type=inn&val={x}')
             excel__writer(full_df, 'table__full.xlsx')
             print(datetime.now(), f'Выполнено {row} / {len(full_df["Регион"])} запросов. Промежуточная таблица сохранена. Остановка программы на 5 минут. \n Необходимо ввести проверочный код на https://www.list-org.com/bot')
             time.sleep(300)
@@ -399,6 +411,13 @@ for row, col in enumerate(full_df['ИНН лицензиата']):
         time.sleep(1.5)
     
 full_df['Веб-сайт'] = pd.Series(web__sites)
+print(full_df['Поиск в Google'][1])
+if ~full_df['Поиск в Google'][1].__contains__('http'):
+    full_df['Поиск в Google'] = full_df['Наименование лицензиата'].\
+            apply(lambda x: f'https://www.google.com/search?q={x.replace(" ", "+")}')
+if ~full_df['Поиск на List-Org'][1].__contains__('http'):       
+    full_df['Поиск на List-Org'] = full_df['ИНН лицензиата'].\
+        apply(lambda x: f'https://www.list-org.com/search?type=inn&val={x}')
 excel__writer(full_df, 'table__full.xlsx')
 
 
