@@ -6,6 +6,7 @@ from datetime import datetime
 import time
 from random_user_agent.user_agent import UserAgent
 from random_user_agent.params import SoftwareName, OperatingSystem
+import xlrd
 pd.io.formats.format.header_style = None
 
 user_agent = ('Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:50.0) '
