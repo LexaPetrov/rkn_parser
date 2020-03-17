@@ -22,21 +22,49 @@ user_agent_rotator = UserAgent(software_names=software_names, operating_systems=
 
 user_agents = user_agent_rotator.get_user_agents()
 
+print(
+    '''
+    ================================= 
+    Вывод лицензиатов кабельного вещания 
+    Если хотите считать существующую таблицу table.xlsx, нажмите ( 1 ); 
+    Если хотите выполнить поиск с нуля, нажмите ( 2 ) 
+    Затем нажмите Enter 
+    =================================
+    '''
+        )
+
+in_ = int(input())
+
+if in_ == 1:
+    try: 
+        full_df = pd.read_excel('table.xlsx')
+        print('Найден файл table.xlsx / Поиск файла table__full.xlsx...')
+        web__sites = pd.read_excel('table__full.xlsx')
+        web__sites = list(web__sites['Веб-сайт'])
+        print('Найден файл table__full.xlsx / Продолжение поиска ссылок...')
+    except: 
+        web__sites = []
+        full_df = []
+        print('Не найден файл table__full.xlsx / Старт поиска ссылок...')
+        pass
+elif in_ == 2:
+    print('Выбран режим поиска лицензиатов с нуля...')
+    full_df = []
+    try:
+        web__sites = pd.read_excel('table__full.xlsx')
+        web__sites = list(web__sites['Веб-сайт'])
+        print('Найден файл table__full.xlsx / Продолжение поиска ссылок...')
+    except:
+        web__sites = []
+        print('Не найден файл table__full.xlsx / Старт поиска ссылок...')
+        pass
+else: 
+    quit()
+    exit()
+
+
 start = datetime.now()
 print('start')
-
-try: 
-    full_df = pd.read_excel('table.xlsx')
-    print('Найден файл table.xlsx / Поиск файла table__full.xlsx...')
-    web__sites = pd.read_excel('table__full.xlsx')
-    web__sites = list(web__sites['Веб-сайт'])
-    print('Найден файл table__full.xlsx / Продолжение поиска ссылок...')
-except: 
-    web__sites = []
-    full_df = []
-    print('Не найден файл table__full.xlsx / Старт поиска ссылок...')
-    pass
-
 
 # Парсинг компаний по ИНН на List-Org
 def get__company__contacts(resp, col):
@@ -273,7 +301,7 @@ regions = [
 ]
 max_regions_number = len(regions)
 # Для теста
-regions__low = regions[0:1]
+# regions__low = regions[0:1]
 # max_regions_number = len(regions__low)
 
 dfs = []
