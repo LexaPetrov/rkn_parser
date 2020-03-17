@@ -39,12 +39,15 @@ if in_ == 1:
     try: 
         full_df = pd.read_excel('table.xlsx')
         print('Найден файл table.xlsx / Поиск файла table__full.xlsx...')
+    except: 
+        full_df = []
+        pass
+    try:
         web__sites = pd.read_excel('table__full.xlsx')
         web__sites = list(web__sites['Веб-сайт'])
         print('Найден файл table__full.xlsx / Продолжение поиска ссылок...')
-    except: 
+    except:
         web__sites = []
-        full_df = []
         print('Не найден файл table__full.xlsx / Старт поиска ссылок...')
         pass
 elif in_ == 2:
@@ -312,7 +315,7 @@ if len(full_df) < 1:
         while True: 
             time.sleep(2)
             print(f'req # {index + 1} / 86, i = {i}')
-            if index % 2 != 0: time.sleep(30)
+            if index % 2 != 0: time.sleep(10)
             response = req.post(
                 url + 'p' + str(500 * i) + '/?all=1',
                 headers={'User-Agent':user_agent},
@@ -330,8 +333,8 @@ if len(full_df) < 1:
 
     full_df = pd.concat(dfs, axis=0)
     full_df['Регион'] = arr
-full_df = format__table(full_df, max_regions_number)
-excel__writer(full_df, 'table.xlsx')
+    full_df = format__table(full_df, max_regions_number)
+    excel__writer(full_df, 'table.xlsx')
 
 
 
