@@ -356,7 +356,7 @@ for row, col in enumerate(full_df['ИНН лицензиата']):
             )
             link = get__company__contacts(response, col)
             if link == None:
-                print('sleep 5s')
+                link = ' - неизвестная ошибка - '
                 time.sleep(5)
             web__sites[row] = link
 
@@ -387,7 +387,7 @@ for row, col in enumerate(full_df['ИНН лицензиата']):
             )
         link = get__company__contacts(response, col)
         if link == None:
-            print('sleep 5s')
+            link = ' - неизвестная ошибка - '
             time.sleep(5)
 
         if counter % 20 == 0:
