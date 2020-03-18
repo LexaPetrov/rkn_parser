@@ -170,7 +170,7 @@ def replace__text(text):
                     'ТСЖ', 'ТНВ', 'МП', 'МУП', 'МУ', 'НП', 'НУ']
     for abb in abbreviations:
         if text.startswith(abb):
-            text = text[len(abb):] + ", " + text[:len(abb)]
+            text = text[len(abb) + 1:] + ", " + text[:len(abb)]
             break
 
     return text
