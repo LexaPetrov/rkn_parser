@@ -391,19 +391,19 @@ for row, (name, inn) in enumerate(index):
                 time.sleep(5)
             web__sites.update({key: link})
 
-            if counter % 20 == 0:
+            if counter % 45 == 0:
                 full_df['Веб-сайт'] = list(map(lambda x: web__sites[x] if x in web__sites.keys() else None, index))
                 full_df['Веб-сайт'].fillna(' - пока не найдено - ', inplace=True)
                 excel__writer(full_df, 'table__full.xlsx')
-                print(datetime.now(), f'Выполнено {row} / {len(full_df)} запросов. Промежуточная таблица сохранена. Остановка программы на 5 минут. \n Необходимо ввести проверочный код на https://www.list-org.com/bot')
-                time.sleep(300)
+                print(datetime.now(), f'Выполнено {row} / {len(full_df)} запросов. Промежуточная таблица сохранена. Остановка программы на 10 секунд. \n Необходимо ввести проверочный код на https://www.list-org.com/bot')
+                time.sleep(10)
                 counter = 0
             print('link -', counter + 1, 'статус:', link)
 
             if row == len(full_df):
                 print('Завершен поиск ссылок')
                 break
-            time.sleep(1.5)
+            # time.sleep(1.5)
     except: 
         response = req.get(
             f'{list__org__url}/search?type=inn',
@@ -416,12 +416,12 @@ for row, (name, inn) in enumerate(index):
             link = ' - неизвестная ошибка - '
             time.sleep(5)
 
-        if counter % 20 == 0:
+        if counter % 45 == 0:
             full_df['Веб-сайт'] = list(map(lambda x: web__sites[x] if x in web__sites.keys() else None, index))
             full_df['Веб-сайт'].fillna(' - пока не найдено - ', inplace=True)
             excel__writer(full_df, 'table__full.xlsx')
-            print(datetime.now(), f'Выполнено {row} / {len(full_df)} запросов. Промежуточная таблица сохранена. Остановка программы на 5 минут. \n Необходимо ввести проверочный код на https://www.list-org.com/bot')
-            time.sleep(300)
+            print(datetime.now(), f'Выполнено {row} / {len(full_df)} запросов. Промежуточная таблица сохранена. Остановка программы на 10 секунд. \n Необходимо ввести проверочный код на https://www.list-org.com/bot')
+            time.sleep(10)
             counter = 0
         print('link -', counter + 1, 'статус:', link)
         web__sites.update({key: link})
@@ -429,7 +429,7 @@ for row, (name, inn) in enumerate(index):
         if row == len(full_df):
             print('Завершен поиск ссылок')
             break
-        time.sleep(1.5)
+        # time.sleep(1.5)
 
 full_df['Веб-сайт'] = list(map(lambda x: web__sites[x] if x in web__sites.keys() else None, index))
 full_df['Веб-сайт'].fillna(' - пока не найдено - ', inplace=True)
