@@ -93,19 +93,33 @@ def get__company__contacts(resp, col):
             if site__link == None: return '- не найдено -'
             else:
                 link__span = site__link.find_all('span')
-                for span in link__span:
-                    link__span = span.decompose()
+                if len(link__span) != 0:
+                    for span in link__span:
+                        link__span = span.decompose()
+                        for a in site__link:
+                            a = a.replace('http://', '')
+                            a = a.replace('https://', '')
+                            a = a.replace('www.', '')
+                            if (a.__contains__('www') & ~a.__contains__('http://')):
+                                a = a.replace(a, 'http://'+a)
+                                return(a)
+                            elif (~a.__contains__('www') & ~a.__contains__('http//')):
+                                a = a.replace(a, 'http://'+a)
+                                return(a)
+                            return(a)
+                else:
                     for a in site__link:
-                        a = a.replace('http://', '')
-                        a = a.replace('https://', '')
-                        a = a.replace('www.', '')
-                        if (a.__contains__('www') & ~a.__contains__('http://')):
-                            a = a.replace(a, 'http://'+a)
+                            a = a.replace('http://', '')
+                            a = a.replace('https://', '')
+                            a = a.replace('www.', '')
+                            if (a.__contains__('www') & ~a.__contains__('http://')):
+                                a = a.replace(a, 'http://'+a)
+                                return(a)
+                            elif (~a.__contains__('www') & ~a.__contains__('http//')):
+                                a = a.replace(a, 'http://'+a)
+                                return(a)
                             return(a)
-                        elif (~a.__contains__('www') & ~a.__contains__('http//')):
-                            a = a.replace(a, 'http://'+a)
-                            return(a)
-                        return(a)
+
 
 
 # Замена длинных названий на сокращения
