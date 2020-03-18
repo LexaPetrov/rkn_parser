@@ -34,6 +34,7 @@ print(
         )
 
 in_ = int(input())
+groupby_cols = ['Наименование лицензиата', 'ИНН лицензиата']
 
 if in_ == 1:
     try: 
@@ -43,22 +44,22 @@ if in_ == 1:
         full_df = []
         pass
     try:
-        web__sites = pd.read_excel('table__full.xlsx')
-        web__sites = list(web__sites['Веб-сайт'])
+        old_df = pd.read_excel('table__full.xlsx')
+        web__sites = {(key1, key2): site for (key1, key2, site) in old_df[[*groupby_cols, 'Веб-сайт']].values}
         print('Найден файл table__full.xlsx / Продолжение поиска ссылок...')
     except:
-        web__sites = []
+        web__sites = {}
         print('Не найден файл table__full.xlsx / Старт поиска ссылок...')
         pass
 elif in_ == 2:
     print('Выбран режим поиска лицензиатов с нуля...')
     full_df = []
     try:
-        web__sites = pd.read_excel('table__full.xlsx')
-        web__sites = list(web__sites['Веб-сайт'])
+        old_df = pd.read_excel('table__full.xlsx')
+        web__sites = {(key1, key2): site for (key1, key2, site) in old_df[[*groupby_cols, 'Веб-сайт']]}
         print('Найден файл table__full.xlsx / Продолжение поиска ссылок...')
     except:
-        web__sites = []
+        web__sites = {}
         print('Не найден файл table__full.xlsx / Старт поиска ссылок...')
         pass
 else: 
@@ -177,7 +178,6 @@ def replace__text(text):
 
 def groupby__inn(table):
     df = table.sort_values(by='Номер лицензии')
-    groupby_cols = ['Наименование лицензиата', 'ИНН лицензиата']
     grouped = df.groupby(groupby_cols)
 
     res = pd.DataFrame(index=range(len(grouped.indices)), columns=df.columns)
@@ -353,29 +353,33 @@ if len(full_df) < 1:
 
 
 counter = 0
-for row, col in enumerate(full_df['ИНН лицензиата']):
+index = full_df.set_index(groupby_cols).index
+for row, (name, inn) in enumerate(index):
+    key = (name, inn)
     counter += 1
     user_agent = user_agent_rotator.get_random_user_agent()
     try:
-        if web__sites[row] == '- не найдено -' or web__sites[row].__contains__('http'):
-            link = web__sites[row]
+        if key in web__sites.keys() and (web__sites[key] == '- не найдено -' or 'http' in web__sites[key]):
+            link = web__sites[key]
             print(f'Ссылка {row + 1} : /{link}/ уже обрабатывалась, переход к следующей...')
             counter = 0
         else:
             response = req.get(
             f'{list__org__url}/search?type=inn',
                 headers={'User-Agent':user_agent},
-                params={'val': col},
+                params={'val': inn},
                 timeout=10,
             )
-            link = get__company__contacts(response, col)
+            link = get__company__contacts(response, inn)
             if link == None:
                 link = ' - неизвестная ошибка - '
                 time.sleep(5)
-            web__sites[row] = link
+            web__sites.update({key: link})
 
+            # ['Наименование лицензиата', 'ИНН лицензиата']
             if counter % 20 == 0:
-                full_df['Веб-сайт'] = pd.Series(web__sites).fillna(' - пока не найдено - ')
+                full_df['Веб-сайт'] = list(map(lambda x: web__sites[x] if x in web__sites.keys() else None, index))
+                full_df['Веб-сайт'].fillna(' - пока не найдено - ', inplace=True)
                 if ~full_df['Поиск в Google'][1].__contains__('http'):
                     full_df['Поиск в Google'] = full_df['Наименование лицензиата'].\
                         apply(lambda x: f'https://www.google.com/search?q={x.replace(" ", "+")}')
@@ -383,12 +387,12 @@ for row, col in enumerate(full_df['ИНН лицензиата']):
                     full_df['Поиск на List-Org'] = full_df['ИНН лицензиата'].\
                         apply(lambda x: f'https://www.list-org.com/search?type=inn&val={x}')
                 excel__writer(full_df, 'table__full.xlsx')
-                print(datetime.now(), f'Выполнено {row} / {len(full_df["Регион"])} запросов. Промежуточная таблица сохранена. Остановка программы на 5 минут. \n Необходимо ввести проверочный код на https://www.list-org.com/bot')
+                print(datetime.now(), f'Выполнено {row} / {len(full_df)} запросов. Промежуточная таблица сохранена. Остановка программы на 5 минут. \n Необходимо ввести проверочный код на https://www.list-org.com/bot')
                 time.sleep(300)
                 counter = 0
             print('link -', counter + 1, 'статус:', link)
 
-            if row == len(full_df['Регион']):
+            if row == len(full_df):
                 print('Завершен поиск ссылок')
                 break
             time.sleep(1.5)
@@ -396,16 +400,17 @@ for row, col in enumerate(full_df['ИНН лицензиата']):
         response = req.get(
             f'{list__org__url}/search?type=inn',
                 headers={'User-Agent':user_agent},
-                params={'val': col},
+                params={'val': inn},
                 timeout=10,
             )
-        link = get__company__contacts(response, col)
+        link = get__company__contacts(response, inn)
         if link == None:
             link = ' - неизвестная ошибка - '
             time.sleep(5)
 
         if counter % 20 == 0:
-            full_df['Веб-сайт'] = pd.Series(web__sites).fillna(' - пока не найдено - ')
+            full_df['Веб-сайт'] = list(map(lambda x: web__sites[x] if x in web__sites.keys() else None, index))
+            full_df['Веб-сайт'].fillna(' - пока не найдено - ', inplace=True)
             if ~full_df['Поиск в Google'][1].__contains__('http'):
                 full_df['Поиск в Google'] = full_df['Наименование лицензиата'].\
                         apply(lambda x: f'https://www.google.com/search?q={x.replace(" ", "+")}')
@@ -413,18 +418,19 @@ for row, col in enumerate(full_df['ИНН лицензиата']):
                 full_df['Поиск на List-Org'] = full_df['ИНН лицензиата'].\
                     apply(lambda x: f'https://www.list-org.com/search?type=inn&val={x}')
             excel__writer(full_df, 'table__full.xlsx')
-            print(datetime.now(), f'Выполнено {row} / {len(full_df["Регион"])} запросов. Промежуточная таблица сохранена. Остановка программы на 5 минут. \n Необходимо ввести проверочный код на https://www.list-org.com/bot')
+            print(datetime.now(), f'Выполнено {row} / {len(full_df)} запросов. Промежуточная таблица сохранена. Остановка программы на 5 минут. \n Необходимо ввести проверочный код на https://www.list-org.com/bot')
             time.sleep(300)
             counter = 0
         print('link -', counter + 1, 'статус:', link)
-        web__sites.append(link)
+        web__sites.update({key: link})
         
-        if row == len(full_df['Регион']):
+        if row == len(full_df):
             print('Завершен поиск ссылок')
             break
         time.sleep(1.5)
-    
-full_df['Веб-сайт'] = pd.Series(web__sites)
+
+full_df['Веб-сайт'] = list(map(lambda x: web__sites[x] if x in web__sites.keys() else None, index))
+full_df['Веб-сайт'].fillna(' - пока не найдено - ', inplace=True)
 print(full_df['Поиск в Google'][1])
 if ~full_df['Поиск в Google'][1].__contains__('http'):
     full_df['Поиск в Google'] = full_df['Наименование лицензиата'].\
