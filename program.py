@@ -40,31 +40,23 @@ if in_ == 1:
     try: 
         full_df = pd.read_excel('table.xlsx', dtype=str)
         print('Найден файл table.xlsx / Поиск файла table__full.xlsx...')
-    except: 
-        full_df = []
-        pass
-    try:
-        old_df = pd.read_excel('table__full.xlsx', dtype=str)
-        web__sites = {(key1, key2): site for (key1, key2, site) in old_df[[*groupby_cols, 'Веб-сайт']].values}
-        print('Найден файл table__full.xlsx / Продолжение поиска ссылок...')
     except:
-        web__sites = {}
-        print('Не найден файл table__full.xlsx / Старт поиска ссылок...')
-        pass
+        full_df = []
+        print('Не найден файл table.xlsx / Поиск файла table__full.xlsx...')
 elif in_ == 2:
     print('Выбран режим поиска лицензиатов с нуля...')
     full_df = []
-    try:
-        old_df = pd.read_excel('table__full.xlsx', dtype=str)
-        web__sites = {(key1, key2): site for (key1, key2, site) in old_df[[*groupby_cols, 'Веб-сайт']]}
-        print('Найден файл table__full.xlsx / Продолжение поиска ссылок...')
-    except:
-        web__sites = {}
-        print('Не найден файл table__full.xlsx / Старт поиска ссылок...')
-        pass
-else: 
+else:
     quit()
     exit()
+
+try:
+    old_df = pd.read_excel('table__full.xlsx', dtype=str)
+    web__sites = {(key1, key2): site for (key1, key2, site) in old_df[[*groupby_cols, 'Веб-сайт']].values}
+    print('Найден файл table__full.xlsx / Продолжение поиска ссылок...')
+except:
+    web__sites = {}
+    print('Не найден файл table__full.xlsx / Старт поиска ссылок...')
 
 
 # Парсинг компаний по ИНН на List-Org
@@ -305,7 +297,7 @@ def excel__writer(table, path):
                 worksheet.write(row_idx + 1, col_idx, str(r), cell_format)
 
     writer.save()
-    print('Saved into', path)
+    print('Результат сохранен в', path)
 
 
 # сохранить страницу в dataframe
@@ -330,11 +322,10 @@ regions = [
 ]
 max_regions_number = len(regions)
 # Для теста
-# regions__low = regions[0:1]
+# regions__low = regions[0:2]
 # max_regions_number = len(regions__low)
 
 start = datetime.now()
-print('start')
 
 dfs, arr = [], []
 if len(full_df) != 0:
@@ -344,8 +335,9 @@ else:
         i = 0
         while True: 
             time.sleep(2)
-            print(f'req # {index + 1} / 86, i = {i}')
-            if index % 2 != 0: time.sleep(30)
+            print(f'Запрос региона # {index + 1} / {max_regions_number}, страница # {i + 1}')
+            if index % 2 != 0:
+                time.sleep(30)
             response = req.post(
                 url + 'p' + str(500 * i) + '/?all=1',
                 headers={'User-Agent':user_agent},
@@ -361,27 +353,28 @@ else:
             if res.shape[0] < 500:
                 break
 
+    print('Завершен поиск лицензиатов. Выполняется сохранение в excel файл')
     full_df = pd.concat(dfs, axis=0)
     full_df['Регион'] = arr
     full_df = format__table(full_df, max_regions_number)
     excel__writer(full_df, 'table.xlsx')
 
-
-counter = 0
+print()
+counter = 1
 index = full_df.set_index(groupby_cols).index
 for row, (name, inn) in enumerate(index):
     key = (name, inn)
-    counter += 1
     # user_agent = user_agent_rotator.get_random_user_agent()
-    try:
-        if key in web__sites.keys() and (web__sites[key] == '- не найдено -' or 'http' in web__sites[key]):
-            link = web__sites[key]
-            print(f'Ссылка {row + 1} : /{link}/ уже обрабатывалась, переход к следующей...')
-            counter = 0
-        else:
+    if key in web__sites.keys() and (web__sites[key] == '- не найдено -' or 'http' in str(web__sites[key])):
+        link = web__sites[key]
+        print(f'Ссылка {row + 1} : /{link}/ уже обрабатывалась, переход к следующей...')
+        continue
+
+    for try_n in range(2):
+        try:
             response = req.get(
-            f'{list__org__url}/search?type=inn',
-                headers={'User-Agent':user_agent},
+                f'{list__org__url}/search?type=inn',
+                headers={'User-Agent': user_agent},
                 params={'val': inn},
                 timeout=10,
             )
@@ -390,52 +383,27 @@ for row, (name, inn) in enumerate(index):
                 link = ' - неизвестная ошибка - '
                 time.sleep(5)
             web__sites.update({key: link})
+            print(f'Ссылка {row + 1} : запрос # {counter}, статус: {link}')
 
-            if counter % 45 == 0:
+            if counter == 45:
                 full_df['Веб-сайт'] = list(map(lambda x: web__sites[x] if x in web__sites.keys() else None, index))
                 full_df['Веб-сайт'].fillna(' - пока не найдено - ', inplace=True)
                 excel__writer(full_df, 'table__full.xlsx')
-                print(datetime.now(), f'Выполнено {row} / {len(full_df)} запросов. Промежуточная таблица сохранена. Остановка программы на 10 секунд. \n Необходимо ввести проверочный код на https://www.list-org.com/bot')
+                print(datetime.now(),
+                      f'Обработано ссылок: {row} / {len(full_df)}. '
+                      f'Промежуточная таблица сохранена. Остановка программы на 10 секунд.\n'
+                      f'Необходимо ввести проверочный код на https://www.list-org.com/bot')
                 time.sleep(10)
                 counter = 0
-            print('link -', counter + 1, 'статус:', link)
-
-            if row == len(full_df):
-                print('Завершен поиск ссылок')
-                break
-            # time.sleep(1.5)
-    except: 
-        response = req.get(
-            f'{list__org__url}/search?type=inn',
-                headers={'User-Agent':user_agent},
-                params={'val': inn},
-                timeout=10,
-            )
-        link = get__company__contacts(response, inn)
-        if link == None:
-            link = ' - неизвестная ошибка - '
-            time.sleep(5)
-
-        if counter % 45 == 0:
-            full_df['Веб-сайт'] = list(map(lambda x: web__sites[x] if x in web__sites.keys() else None, index))
-            full_df['Веб-сайт'].fillna(' - пока не найдено - ', inplace=True)
-            excel__writer(full_df, 'table__full.xlsx')
-            print(datetime.now(), f'Выполнено {row} / {len(full_df)} запросов. Промежуточная таблица сохранена. Остановка программы на 10 секунд. \n Необходимо ввести проверочный код на https://www.list-org.com/bot')
-            time.sleep(10)
-            counter = 0
-        print('link -', counter + 1, 'статус:', link)
-        web__sites.update({key: link})
-        
-        if row == len(full_df):
-            print('Завершен поиск ссылок')
             break
-        # time.sleep(1.5)
+        except:
+            continue
+    counter += 1
 
+print('Завершен поиск ссылок. Выполняется сохранение в excel файл')
 full_df['Веб-сайт'] = list(map(lambda x: web__sites[x] if x in web__sites.keys() else None, index))
 full_df['Веб-сайт'].fillna(' - пока не найдено - ', inplace=True)
 excel__writer(full_df, 'table__full.xlsx')
-
-
 print('Заняло времени - ', datetime.now() - start)
 
 # https://python-scripts.com/beautifulsoup-html-parsing
